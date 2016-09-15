@@ -2,6 +2,7 @@ package edu.put.ma.descs;
 
 import static edu.put.ma.gaps.GapsDistributionImpl.RESIDUE_IN_GAP_PROXIMITY;
 import static edu.put.ma.gaps.GapsDistributionImpl.RESIDUE_OUTSIDE_GAP;
+import static edu.put.ma.utils.StringUtils.NEW_LINE;
 
 import java.io.File;
 import java.util.Collections;
@@ -89,8 +90,8 @@ public class DescriptorsBuilderImpl implements DescriptorsBuilder {
             if (StringUtils.isNotBlank(modelNo)) {
                 summary.append(String.format(" for model %s", modelNo));
             }
-            summary.append(" is presented in the following table:").append("\n")
-                    .append("ResNo\tId\tSegmentsNo\tElementsNo\tResiduesNo").append("\n");
+            summary.append(" is presented in the following table:").append(
+                    "\nResNo\tId\tSegmentsNo\tElementsNo\tResiduesNo\n");
             boolean isFirst = true;
             for (int residueIndex = 0; residueIndex < residuesCount; residueIndex++) {
                 if (descriptors.containsKey(residueIndex)) {
@@ -110,14 +111,12 @@ public class DescriptorsBuilderImpl implements DescriptorsBuilder {
     public void saveAtomNamePairsConsideredByInContactResiduesIdentificationExpression(final File outputDir,
             final Writer writer) {
         final String atomNamePairsString = contactsInspector.getAtomNamePairsString();
-        if (StringUtils.isNotBlank(atomNamePairsString)) {
-            final File outputFile = FileUtils.getFile(outputDir,
-                    "atom-names-considered-by-in-contact-residues-identification-expression.list");
-            LOGGER.info(String
-                    .format("Atom names considered by in-contact residues identification expression: %s saved in file %s",
-                            atomNamePairsString, outputFile.getAbsolutePath()));
-            writer.write(atomNamePairsString, outputFile, "Atom name pairs");
-        }
+        final File outputFile = FileUtils.getFile(outputDir,
+                "atom-names-considered-by-in-contact-residues-identification-expression.list");
+        LOGGER.info(String
+                .format("Atom names considered by in-contact residues identification expression: %s saved in file %s",
+                        atomNamePairsString, outputFile.getAbsolutePath()));
+        writer.write(atomNamePairsString, outputFile, "Atom name pairs");
     }
 
     @Override
@@ -137,7 +136,7 @@ public class DescriptorsBuilderImpl implements DescriptorsBuilder {
         for (int residueIndex = 0; residueIndex < residuesCount; residueIndex++) {
             if (descriptors.containsKey(residueIndex)) {
                 final Descriptor descriptor = descriptors.get(residueIndex);
-                sb.append(descriptor.toString()).append("\n");
+                sb.append(descriptor.toString()).append(NEW_LINE);
             }
         }
         return sb.toString();
@@ -147,31 +146,6 @@ public class DescriptorsBuilderImpl implements DescriptorsBuilder {
     public void close() {
         contactsInspector.close();
         ExecutorUtils.closeExecutor(executor);
-    }
-
-    private boolean saveSingleDescriptor(final File outputDir, final Writer writer,
-            final DescriptorsFilter descriptorsFilter, final StringBuilder summary, final boolean isFirst,
-            final Descriptor descriptor) {
-        boolean first = isFirst;
-        if (isDescriptorValid(descriptor) && isDescriptorAppropriate(descriptor, descriptorsFilter)) {
-            final File descriptorFile = FileUtils.getFile(outputDir, descriptor.getId());
-            if (first) {
-                first = false;
-            } else {
-                summary.append("\n");
-            }
-            summary.append(descriptor.toString());
-            writer.writeAtomsOnly(descriptor.getStructure(), descriptorFile);
-        }
-        return first;
-    }
-
-    private void prepareDescriptors() {
-        descriptors = edu.put.ma.utils.CollectionUtils.prepareMap(descriptors);
-    }
-
-    private void prepareExecutorService(final int threadsCount) {
-        executor = ExecutorUtils.prepareExecutorService(executor, threadsCount);
     }
 
     public static final boolean isElementCanBeCreated(final int residuesCount, final int residueIndex,
@@ -217,6 +191,31 @@ public class DescriptorsBuilderImpl implements DescriptorsBuilder {
         }
     }
 
+    private boolean saveSingleDescriptor(final File outputDir, final Writer writer,
+            final DescriptorsFilter descriptorsFilter, final StringBuilder summary, final boolean isFirst,
+            final Descriptor descriptor) {
+        boolean first = isFirst;
+        if (isDescriptorValid(descriptor) && isDescriptorAppropriate(descriptor, descriptorsFilter)) {
+            final File descriptorFile = FileUtils.getFile(outputDir, descriptor.getId());
+            if (first) {
+                first = false;
+            } else {
+                summary.append(NEW_LINE);
+            }
+            summary.append(descriptor.toString());
+            writer.write(descriptor.getStructure(), descriptorFile);
+        }
+        return first;
+    }
+
+    private void prepareDescriptors() {
+        descriptors = edu.put.ma.utils.CollectionUtils.prepareMap(descriptors);
+    }
+
+    private void prepareExecutorService(final int threadsCount) {
+        executor = ExecutorUtils.prepareExecutorService(executor, threadsCount);
+    }
+
     private Descriptor build(final StructureExtension extendedStructure, final int modelIndex,
             final ModelProperties modelProperties, final int residueIndex,
             final ImmutableList<Boolean> residueContacts) {
@@ -231,20 +230,22 @@ public class DescriptorsBuilderImpl implements DescriptorsBuilder {
                 DescriptorResidueType.ORIGIN_CENTER, gapsDistribution)) {
             buildElement(localResiduesCount, residueIndex, neibhourhoodSize, elementsCenters,
                     inContactResidues);
-            buildElementForInContactResidues(residueContacts, gapsDistribution, localResiduesCount,
-                    elementsCenters, inContactResidues, neibhourhoodSize);
+            if (!CollectionUtils.sizeIsEmpty(inContactResidues)) {
+                buildElementForInContactResidues(residueContacts, gapsDistribution, localResiduesCount,
+                        elementsCenters, inContactResidues, neibhourhoodSize);
+            }
             if ((CollectionUtils.size(elementsCenters) > 1)
                     && (CollectionUtils.size(inContactResidues) >= gapsDistribution.getElementSize())) {
                 Collections.sort(elementsCenters);
                 Collections.sort(inContactResidues);
                 removeRedundantElementCenterIndexes(residueIndex, elementsCenters,
                         gapsDistribution.getElementSize());
-                try {
-                    return new DescriptorImpl(extendedStructure, modelIndex, modelProperties, residueIndex,
-                            elementsCenters, inContactResidues);
-                } catch (UnappropriateDescriptorException e) {
-                    LOGGER.warn(e.getMessage(), e);
-                }
+            }
+            try {
+                return new DescriptorImpl(extendedStructure, modelIndex, modelProperties, residueIndex,
+                        elementsCenters, inContactResidues);
+            } catch (UnappropriateDescriptorException e) {
+                LOGGER.warn(e.getMessage(), e);
             }
         }
         return null;

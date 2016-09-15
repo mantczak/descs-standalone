@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.put.ma.archiver.ArchiverFactory;
 import edu.put.ma.io.FormatType;
 
 public class FormatConverterInputModelImpl extends CommonInputModelImpl implements FormatConverterInputModel {
@@ -42,6 +43,11 @@ public class FormatConverterInputModelImpl extends CommonInputModelImpl implemen
         options.addOption("i", "input-file", true, "input file path");
         options.addOption("o", "output-file", true, "(optional) output file path");
         return options;
+    }
+
+    @Override
+    public boolean isValid() {
+        return getInputFormat() != getOutputFormat() && (isPdb2CifValid() || isCif2PdbValid());
     }
 
     @Override
@@ -98,10 +104,23 @@ public class FormatConverterInputModelImpl extends CommonInputModelImpl implemen
         }
     }
 
+    private boolean isPdb2CifValid() {
+        return (FormatType.PDB == getInputFormat())
+                && (((StringUtils.endsWithIgnoreCase(inputFilePath, ".pdb")) || (StringUtils
+                        .endsWithIgnoreCase(inputFilePath, ".tar.gz"))) && (StringUtils.endsWithIgnoreCase(
+                        outputFilePath, ".cif")));
+    }
+
+    private boolean isCif2PdbValid() {
+        return (FormatType.PDB == getOutputFormat())
+                && (((StringUtils.endsWithIgnoreCase(outputFilePath, ".pdb")) || (StringUtils
+                        .endsWithIgnoreCase(outputFilePath, ".tar.gz"))) && (StringUtils.endsWithIgnoreCase(
+                        inputFilePath, ".cif")));
+    }
+
     private void initInputModelString() {
         inputModelString = new StringBuilder(inputModelString).append("Input file path: ")
-                .append(inputFilePath).append("\n").append("Output file path: ").append(outputFilePath)
-                .toString();
+                .append(inputFilePath).append("\nOutput file path: ").append(outputFilePath).toString();
     }
 
     private void setInputFilePath() {
@@ -112,11 +131,18 @@ public class FormatConverterInputModelImpl extends CommonInputModelImpl implemen
         this.outputFilePath = getOptionString("o");
         if (StringUtils.isBlank(outputFilePath)) {
             final String inputFileFullPath = FilenameUtils.getFullPath(inputFilePath);
-            final String inputFileBasename = FilenameUtils.getBaseName(inputFilePath);
+            final String inputFilename = FilenameUtils.getName(inputFilePath);
+            String inputFileBasename = null;
+            if (ArchiverFactory.isArchive(inputFilename)) {
+                final String currentPostfix = ArchiverFactory.getArchiverPostfix(inputFilename);
+                inputFileBasename = StringUtils.substring(inputFilename, 0,
+                        StringUtils.indexOf(inputFilename, currentPostfix));
+            } else {
+                inputFileBasename = FilenameUtils.getBaseName(inputFilePath);
+            }
             final String expectedExtension = StringUtils.lowerCase(getOutputFormat().toString());
             this.outputFilePath = FilenameUtils.concat(inputFileFullPath, inputFileBasename + "."
                     + expectedExtension);
         }
     }
-
 }

@@ -7,5 +7,6 @@ import edu.put.ma.model.ExtendedAlignment;
 public interface ComparisonAlgorithm {
 
     ExtendedAlignment extendAlignment(DescriptorsComparator descriptorsComparator,
-            DescriptorsPair descriptorsPair, ExtendedAlignment extendedOriginElementsAlignment);
+            DescriptorsPair descriptorsPair, ExtendedAlignment extendedOriginElementsAlignment,
+            AlignmentAcceptanceMode alignmentAcceptanceMode);
 }

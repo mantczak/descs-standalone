@@ -7,7 +7,7 @@ import edu.put.ma.descs.SimilarDescriptorsVerifier;
 public interface ComparisonResult {
 
     boolean isStructurallySimilar();
-    
+
     double getOriginElementsAlignmentRmsd();
 
     double getAlignedElementsRatio();
@@ -18,9 +18,12 @@ public interface ComparisonResult {
 
     SVDSuperimposer getSuperimposer();
 
-    void update(final SimilarDescriptorsVerifier similarDescriptorsVerifier,
-            final RmsdModel currentAlignmentRmsdModel, final double alignedElementsRatio,
-            final double alignedResiduesRatio);
+    void update(SimilarDescriptorsVerifier similarDescriptorsVerifier, RmsdModel currentAlignmentRmsdModel,
+            double alignedElementsRatio, double alignedResiduesRatio);
 
     String toString();
+
+    String getSequenceAlignment();
+    
+    void setSequenceAlignment(String sequenceAlignment);
 }

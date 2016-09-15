@@ -1,6 +1,7 @@
 package edu.put.ma.model.input;
 
 import edu.put.ma.descs.AlignmentMode;
+import edu.put.ma.descs.algorithms.AlignmentAcceptanceMode;
 import edu.put.ma.descs.algorithms.ComparisonAlgorithm;
 import edu.put.ma.descs.algorithms.ComparisonAlgorithms;
 import edu.put.ma.descs.SimilarDescriptorsVerifier;
@@ -24,8 +25,10 @@ public interface DescriptorsComparatorInputModel extends CommonInputModel {
 
     AlignmentMode getAlignmentMode();
 
+    AlignmentAcceptanceMode getAlignmentAcceptanceMode();
+
     String getOutputDirPath();
 
     double getMaximalRmsdThresholdPerDuplexPair();
-    
+
 }

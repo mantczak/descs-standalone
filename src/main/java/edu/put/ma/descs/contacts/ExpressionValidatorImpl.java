@@ -20,6 +20,10 @@ import edu.put.ma.model.ResiduesDictionary;
 
 public class ExpressionValidatorImpl implements ExpressionValidator {
 
+    private static final int SECOND_COMPONENT_GROUP_INDEX = 2;
+
+    private static final int FIRST_COMPONENT_GROUP_INDEX = 1;
+
     private static final int ALPHABET_SIZE = 26;
 
     @Getter
@@ -110,7 +114,8 @@ public class ExpressionValidatorImpl implements ExpressionValidator {
         for (Map.Entry<String, String> entry : components.entrySet()) {
             final Matcher distanceMatcher = distancePattern.matcher(entry.getValue());
             if (distanceMatcher.matches()) {
-                addDistance(entry.getKey(), distanceMatcher.group(1), distanceMatcher.group(2));
+                addDistance(entry.getKey(), distanceMatcher.group(FIRST_COMPONENT_GROUP_INDEX),
+                        distanceMatcher.group(SECOND_COMPONENT_GROUP_INDEX));
             }
         }
     }

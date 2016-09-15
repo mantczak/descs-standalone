@@ -8,7 +8,10 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.biojava.nbio.structure.Structure;
 
+import edu.put.ma.ExecutionMode;
+import edu.put.ma.archiver.ArchiverFactory;
 import edu.put.ma.descs.UncomparableDescriptorsException;
+import edu.put.ma.io.FormatType;
 import edu.put.ma.model.DescriptorsPair;
 import edu.put.ma.model.input.CommonInputModel;
 import edu.put.ma.structure.StructureExtension;
@@ -145,6 +148,22 @@ public final class PreconditionUtils {
         if (firstListSize != secondListSize) {
             throw new IllegalArgumentException(String.format("%s that are varying with %s [%d, %d]", prefix,
                     differenceType, firstListSize, secondListSize));
+        }
+    }
+
+    public static final void checkIfInputFileIsArchive(final String filename) {
+        if (ArchiverFactory.isArchive(filename)) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "It is prohibited to use any archive files as an input in the following modes: %s and %s (%s and %s formats are only supported in these modes)",
+                            ExecutionMode.DESCRIPTORS_BUILDING, ExecutionMode.DESCRIPTORS_COMPARISON,
+                            FormatType.PDB, FormatType.CIF));
+        }
+    }
+
+    public static <T> void checkIfListIsEmpty(final List<T> list, final String prefix) {
+        if (CollectionUtils.sizeIsEmpty(list)) {
+            throw new IllegalArgumentException(String.format("%s cannot be empty", prefix));
         }
     }
 }

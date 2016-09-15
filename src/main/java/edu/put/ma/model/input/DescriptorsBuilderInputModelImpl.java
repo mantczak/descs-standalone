@@ -77,37 +77,48 @@ public class DescriptorsBuilderInputModelImpl extends CommonInputModelImpl imple
         final Options options = new Options();
         options.addOption("i", "input-file", true, "input file path");
         options.addOption("mt", "molecule-type", true,
-                "provided molecule types: " + ArrayUtils.getEnumNamesString(MoleculeType.class));
+                "supported molecule types: " + ArrayUtils.getEnumNamesString(MoleculeType.class));
         options.addOption("ice", "in-contact-residues-expression-file", true,
-                "file path of expression that should be fulfilled by each in-contact residues pair");
+                "file path of the expression that should be fulfilled by each in-contact residues pair");
         options.addOption("od", "output-directory", true, "(optional) output directory path");
         options.addOption("es", "element-size", true,
-                "(optional) number of residues considered by a single element [default="
-                        + DEFAULT_ELEMENT_SIZE + "]");
+                "(optional) number of residues in a single element [default=" + DEFAULT_ELEMENT_SIZE + "]");
         options.addOption("if", "input-format", true, "(optional) provided file formats:  "
                 + formatTypeNamesString + " [default=" + DEFAULT_FORMAT + "]");
         options.addOption("of", "output-format", true, "(optional) provided file formats: "
                 + formatTypeNamesString + " [default=" + DEFAULT_FORMAT + "]");
         options.addOption("tc", "threads-count", true,
-                "(optional) threads count used during processing  [default=" + AVAILABLE_PROCESSORS + "]");
-        options.addOption("fscge",
-                "filter-of-descriptors-that-characterized-with-lower-value-of-segments-count", true,
-                "(optional) filter of descriptors that characterized with lower value of segments count [default=1]");
-        options.addOption("fscle",
-                "filter-of-descriptors-that-characterized-with-higher-value-of-segments-count", true,
-                "(optional) filter of descriptors that characterized with higher value of segments count [default=50]");
-        options.addOption("fecge",
-                "filter-of-descriptors-that-characterized-with-lower-value-of-elements-count", true,
-                "(optional) filter of descriptors that characterized with lower value of elements count [default=1]");
-        options.addOption("fecle",
-                "filter-of-descriptors-that-characterized-with-higher-value-of-elements-count", true,
-                "(optional) filter of descriptors that characterized with higher value of elements count [default=200]");
-        options.addOption("frcge",
-                "filter-of-descriptors-that-characterized-with-lower-value-of-residues-count", true,
-                "(optional) filter of descriptors that characterized with lower value of residues count [default=1]");
-        options.addOption("frcle",
-                "filter-of-descriptors-that-characterized-with-higher-value-of-residues-count", true,
-                "(optional) filter of descriptors that characterized with higher value of residues count [default=1000]");
+                "(optional) number of threads used during processing [default=" + AVAILABLE_PROCESSORS + "]");
+        options.addOption(
+                "fscge",
+                "filter-of-descriptors-that-characterized-with-lower-value-of-segments-count",
+                true,
+                "(optional) a filter on descriptors that are characterized by lower value of segments count than the given bound [default=1]");
+        options.addOption(
+                "fscle",
+                "filter-of-descriptors-that-characterized-with-higher-value-of-segments-count",
+                true,
+                "(optional) a filter on descriptors that are characterized by higher value of segments count than the given bound [default=50]");
+        options.addOption(
+                "fecge",
+                "filter-of-descriptors-that-characterized-with-lower-value-of-elements-count",
+                true,
+                "(optional) a filter on descriptors that are characterized by lower value of elements count than the given bound [default=1]");
+        options.addOption(
+                "fecle",
+                "filter-of-descriptors-that-characterized-with-higher-value-of-elements-count",
+                true,
+                "(optional) a filter on descriptors that are characterized by higher value of elements count than the given bound [default=200]");
+        options.addOption(
+                "frcge",
+                "filter-of-descriptors-that-characterized-with-lower-value-of-residues-count",
+                true,
+                "(optional) a filter on descriptors that are characterized by lower value of residues count than the given bound [default=1]");
+        options.addOption(
+                "frcle",
+                "filter-of-descriptors-that-characterized-with-higher-value-of-residues-count",
+                true,
+                "(optional) a filter on descriptors that are characterized by higher value of residues count than the given bound [default=1000]");
         return options;
     }
 
@@ -239,14 +250,13 @@ public class DescriptorsBuilderInputModelImpl extends CommonInputModelImpl imple
 
     private void initInputModelString() {
         inputModelString = new StringBuilder(inputModelString).append("Input file path: ")
-                .append(inputFilePath).append("\n").append("Molecule type: ").append(moleculeType)
-                .append("\n")
-                .append("Expression that should be fulfilled by each in-contact residues pair: ")
-                .append(inContactResiduesExpressionString).append("\n")
-                .append("Number of residues considered by a single element: ").append(elementSize)
-                .append("\n").append("Threads count used during processing: ").append(threadsCount)
-                .append("\n").append("Descriptors filter properties:\n").append(descriptorsFilter.toString())
-                .append("\n").append("Output dir path: ").append(outputDirPath).toString();
+                .append(inputFilePath).append("\nMolecule type: ").append(moleculeType)
+                .append("\nExpression that should be fulfilled by each in-contact residues pair: ")
+                .append(inContactResiduesExpressionString)
+                .append("\nNumber of residues considered by a single element: ").append(elementSize)
+                .append("\nThreads count used during processing: ").append(threadsCount)
+                .append("\nDescriptors filter properties:\n").append(descriptorsFilter.toString())
+                .append("\nOutput dir path: ").append(outputDirPath).toString();
     }
 
     private void setInputFilePath() {

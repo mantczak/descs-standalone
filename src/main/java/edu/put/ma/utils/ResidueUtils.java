@@ -1,5 +1,6 @@
 package edu.put.ma.utils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -18,13 +19,23 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import edu.put.ma.model.Atom;
 import edu.put.ma.model.MoleculeType;
 import edu.put.ma.model.Residue;
 import edu.put.ma.model.ResiduesDictionary;
+import edu.put.ma.model.StructureType;
 
 public final class ResidueUtils {
+
+    private static final String HETATM_PREFIX = "HETATM";
+
+    private static final String ATOM_PREFIX = "ATOM";
+
+    private static final double ELEMENT_CENTER_FLAG = 2.0;
+
+    private static final double DESCRIPTOR_CENTER_FLAG = 1.0;
 
     private static final double[] CB_TEMPLATE_COORDINATES = new double[] { 0.0, 0.0, 0.0 };
 
@@ -42,6 +53,11 @@ public final class ResidueUtils {
 
     private ResidueUtils() {
         // hidden constructor
+    }
+
+    public static boolean isCoordinatesRecord(final String record) {
+        return (StringUtils.startsWith(record, ATOM_PREFIX))
+                || (StringUtils.startsWith(record, HETATM_PREFIX));
     }
 
     public static final boolean isAllAtomsIncluded(final ImmutableSet<Atom> atoms, final Group residue) {
@@ -74,32 +90,6 @@ public final class ResidueUtils {
         atom.setX(ensureCommonDoubleFormat(atom.getX()));
         atom.setY(ensureCommonDoubleFormat(atom.getY()));
         atom.setZ(ensureCommonDoubleFormat(atom.getZ()));
-    }
-
-    private static final org.biojava.nbio.structure.Atom getCentroidSinceIndex(
-            final ImmutableSet<Atom> atoms, final Group residue, final String atomName, final int startIndex) {
-        final int atomsCount = CollectionUtils.size(atoms);
-        if ((atomsCount == 0) || (residue == null)) {
-            throw new IllegalArgumentException(EMPTY_RESIDUE + " and atoms set cannot be empty");
-        }
-        PreconditionUtils.checkIfIndexInRange(startIndex, 0, atomsCount, "Starting");
-        final int currentAtomsCount = atomsCount - startIndex;
-        final org.biojava.nbio.structure.Atom[] residueAtoms = new org.biojava.nbio.structure.Atom[currentAtomsCount];
-        int consideredAtomsNo = 0;
-        final ImmutableList<Atom> atomsList = atoms.asList();
-        for (int i = startIndex; i < atomsCount; i++) {
-            final Atom atom = atomsList.get(i);
-            final org.biojava.nbio.structure.Atom residueAtom = residue.getAtom(atom.getName());
-            if (residueAtom != null) {
-                residueAtoms[consideredAtomsNo++] = residueAtom;
-            }
-        }
-        org.biojava.nbio.structure.Atom centroid = null;
-        if (currentAtomsCount == consideredAtomsNo) {
-            centroid = Calc.getCentroid(residueAtoms);
-            unifyProperties(centroid, atomName, residue);
-        }
-        return centroid;
     }
 
     public static final org.biojava.nbio.structure.Atom getVirtualCbAtom(final Group residue) {
@@ -165,6 +155,73 @@ public final class ResidueUtils {
         return null;
     }
 
+    public static final boolean areResiduesConnected(final MoleculeType moleculeType,
+            final Group previousResidue, final Group currentResidue) {
+        return (moleculeType == MoleculeType.PROTEIN) ? ResidueUtils.areAminoAcidsConnected(previousResidue,
+                currentResidue) || ResidueUtils.areAminoAcidsConnected(currentResidue, previousResidue)
+                : ResidueUtils.areNucleotidesConnected(previousResidue, currentResidue)
+                        || ResidueUtils.areNucleotidesConnected(currentResidue, previousResidue);
+    }
+
+    public static final String getResidueKey(final Group residue) {
+        return new StringBuilder(residue.getResidueNumber().printFull()).append("_")
+                .append(residue.getPDBName()).toString();
+    }
+
+    public static final List<Integer> filterResidues(final List<Chain> chains,
+            final MoleculeType moleculeType, final StructureType structureType,
+            final boolean considerAppropriateResiduesOnly) {
+        final ImmutableList<? extends Residue> dictionary = ResiduesDictionary
+                .getResidueDictionary(moleculeType);
+        final List<Integer> chainsThatShouldBeDeleted = Lists.newArrayList();
+        int chainIndex = 0;
+        for (Chain chain : chains) {
+            final List<Group> residues = chain.getAtomGroups();
+            final int residuesCount = CollectionUtils.size(residues);
+            if (residuesCount > 0) {
+                processResidues(moleculeType, dictionary, residues, residuesCount, structureType,
+                        considerAppropriateResiduesOnly);
+                if (!ResidueUtils.isAtLeastOneResidueInChain(chain)) {
+                    chainsThatShouldBeDeleted.add(chainIndex);
+                }
+            }
+            chainIndex++;
+        }
+        return Collections.unmodifiableList(chainsThatShouldBeDeleted);
+    }
+
+    public static final boolean isAtLeastOneResidueInChain(final Chain chain) {
+        final List<Group> residues = chain.getAtomGroups();
+        final int residuesCount = CollectionUtils.size(residues);
+        return residuesCount > 0;
+    }
+
+    private static final org.biojava.nbio.structure.Atom getCentroidSinceIndex(
+            final ImmutableSet<Atom> atoms, final Group residue, final String atomName, final int startIndex) {
+        final int atomsCount = CollectionUtils.size(atoms);
+        if ((atomsCount == 0) || (residue == null)) {
+            throw new IllegalArgumentException(EMPTY_RESIDUE + " and atoms set cannot be empty");
+        }
+        PreconditionUtils.checkIfIndexInRange(startIndex, 0, atomsCount, "Starting");
+        final int currentAtomsCount = atomsCount - startIndex;
+        final org.biojava.nbio.structure.Atom[] residueAtoms = new org.biojava.nbio.structure.Atom[currentAtomsCount];
+        int consideredAtomsNo = 0;
+        final ImmutableList<Atom> atomsList = atoms.asList();
+        for (int i = startIndex; i < atomsCount; i++) {
+            final Atom atom = atomsList.get(i);
+            final org.biojava.nbio.structure.Atom residueAtom = residue.getAtom(atom.getName());
+            if (residueAtom != null) {
+                residueAtoms[consideredAtomsNo++] = residueAtom;
+            }
+        }
+        org.biojava.nbio.structure.Atom centroid = null;
+        if (currentAtomsCount == consideredAtomsNo) {
+            centroid = Calc.getCentroid(residueAtoms);
+            unifyProperties(centroid, atomName, residue);
+        }
+        return centroid;
+    }
+
     private static final void unifyProperties(final org.biojava.nbio.structure.Atom atom,
             final String atomName, final Group residue) {
         atom.setGroup(residue);
@@ -183,12 +240,6 @@ public final class ResidueUtils {
         return Double.compare(Calc.getDistance(atom1, atom2), MAXIMAL_DISTANCE_FOR_CONNECTED_RESIDUES) < 0;
     }
 
-    public static final boolean areResiduesConnected(final MoleculeType moleculeType,
-            final Group previousResidue, final Group currentResidue) {
-        return (moleculeType == MoleculeType.PROTEIN) ? ResidueUtils.areAminoAcidsConnected(previousResidue,
-                currentResidue) : ResidueUtils.areNucleotidesConnected(previousResidue, currentResidue);
-    }
-
     private static final int getIndexOfConsideredAtom(final ImmutableSet<Atom> atoms, final String atomName) {
         PreconditionUtils.checkIfStringIsBlank(atomName, "Atom name");
         int index = 0;
@@ -201,26 +252,10 @@ public final class ResidueUtils {
         return -1;
     }
 
-    public static final String getResidueKey(final Group residue) {
-        return new StringBuilder(residue.getResidueNumber().printFull()).append("_")
-                .append(residue.getPDBName()).toString();
-    }
-
-    public static final void filterResidues(final List<Chain> chains, final MoleculeType moleculeType) {
-        final ImmutableList<? extends Residue> dictionary = ResiduesDictionary
-                .getResidueDictionary(moleculeType);
-        for (Chain chain : chains) {
-            final List<Group> residues = chain.getAtomGroups();
-            final int residuesCount = CollectionUtils.size(residues);
-            if (residuesCount > 0) {
-                processResidues(moleculeType, dictionary, residues, residuesCount);
-            }
-        }
-    }
-
-    private static void processResidues(final MoleculeType moleculeType,
+    private static final void processResidues(final MoleculeType moleculeType,
             final ImmutableList<? extends Residue> dictionary, final List<Group> residues,
-            final int residuesCount) {
+            final int residuesCount, final StructureType structureType,
+            final boolean considerAppropriateResiduesOnly) {
         for (int residueIndex = residuesCount - 1; residueIndex >= 0; residueIndex--) {
             final Group residue = residues.get(residueIndex);
             String residueKey = ResidueUtils.getResidueKey(residue);
@@ -231,39 +266,50 @@ public final class ResidueUtils {
                 }
                 residues.remove(residueIndex);
             } else {
-                residueKey = processResidue(moleculeType, dictionary, residues, residueIndex, residue,
-                        residueKey);
+                residueKey = processResidue(moleculeType, dictionary, residues, residueIndex, residueKey,
+                        structureType, considerAppropriateResiduesOnly);
             }
         }
     }
 
-    private static String processResidue(final MoleculeType moleculeType,
+    private static final String processResidue(final MoleculeType moleculeType,
             final ImmutableList<? extends Residue> dictionary, final List<Group> residues,
-            final int residueIndex, final Group residue, final String residueKey) {
+            final int residueIndex, final String residueKey, final StructureType structureType,
+            final boolean considerAppropriateResiduesOnly) {
+        final Group residue = residues.get(residueIndex);
         String localResidueKey = residueKey;
-        final Residue resEntry = getResidueEntryByName(residue.getPDBName(), dictionary, moleculeType);
-        if (resEntry != null) {
-            final String consistentResName = (moleculeType == MoleculeType.PROTEIN) ? resEntry
-                    .getThreeLettersCode() : resEntry.getSingleLetterCode();
-            final String residueName = residue.getPDBName();
-            if (!StringUtils.equals(residueName, consistentResName)) {
-                LOGGER.warn(String.format("Residue name [%s] is changed for [%s] in residue [%s]",
-                        residueName, consistentResName, localResidueKey));
-                residue.setPDBName(consistentResName);
-                localResidueKey = ResidueUtils.getResidueKey(residue);
-            }
-            if (!resEntry.isComplete(residue)) {
-                LOGGER.warn(String.format("Residue [%s] is ignored as incomplete", localResidueKey));
-                residues.remove(residueIndex);
-            } else {
-                updateAtoms(residue, localResidueKey, resEntry);
-            }
-        } else {
-            LOGGER.warn(String.format("Residue [%s] is ignored as unrecognized",
-                    ResidueUtils.getResidueKey(residue)));
+        if ((considerAppropriateResiduesOnly) && (isInappropriateResidue(moleculeType, residue))) {
             residues.remove(residueIndex);
+        } else {
+            final Residue resEntry = getResidueEntryByName(residue.getPDBName(), dictionary, moleculeType);
+            if (resEntry != null) {
+                final String consistentResName = (moleculeType == MoleculeType.PROTEIN) ? resEntry
+                        .getThreeLettersCode() : resEntry.getSingleLetterCode();
+                final String residueName = residue.getPDBName();
+                if (!StringUtils.equals(residueName, consistentResName)) {
+                    LOGGER.warn(String.format("Residue name [%s] is changed for [%s] in residue [%s]",
+                            residueName, consistentResName, localResidueKey));
+                    residue.setPDBName(consistentResName);
+                    localResidueKey = ResidueUtils.getResidueKey(residue);
+                }
+                if (!resEntry.isComplete(residue)) {
+                    LOGGER.warn(String.format("Residue [%s] is ignored as incomplete", localResidueKey));
+                    residues.remove(residueIndex);
+                } else {
+                    updateAtoms(residue, localResidueKey, resEntry, structureType);
+                }
+            } else {
+                LOGGER.warn(String.format("Residue [%s] is ignored as unrecognized",
+                        ResidueUtils.getResidueKey(residue)));
+                residues.remove(residueIndex);
+            }
         }
         return localResidueKey;
+    }
+
+    private static final boolean isInappropriateResidue(final MoleculeType moleculeType, final Group residue) {
+        return ((moleculeType == MoleculeType.PROTEIN) && (!residue.hasAminoAtoms()))
+                || ((moleculeType == MoleculeType.RNA) && (residue.hasAminoAtoms()));
     }
 
     private static final boolean areNucleotidesConnected(final Group previousResidue,
@@ -291,7 +337,8 @@ public final class ResidueUtils {
         final int residuesCount = CollectionUtils.size(dictionary);
         if ((moleculeType == MoleculeType.RNA) && (count == residuesCount)) {
             for (final Residue resEntry : dictionary) {
-                if (StringUtils.endsWithIgnoreCase(residueName, resEntry.getSingleLetterCode())) {
+                if ((StringUtils.endsWithIgnoreCase(residueName, resEntry.getSingleLetterCode()))
+                        || (StringUtils.startsWithIgnoreCase(residueName, resEntry.getSingleLetterCode()))) {
                     result = resEntry;
                     break;
                 }
@@ -300,7 +347,8 @@ public final class ResidueUtils {
         return result;
     }
 
-    private static final void updateAtoms(final Group residue, final String residueKey, final Residue resEntry) {
+    private static final void updateAtoms(final Group residue, final String residueKey,
+            final Residue resEntry, final StructureType structureType) {
         final Group residueCopy = (Group) residue.clone();
         final List<org.biojava.nbio.structure.Atom> atoms = residueCopy.getAtoms();
         final int atomsCount = CollectionUtils.size(atoms);
@@ -321,6 +369,12 @@ public final class ResidueUtils {
                             consistentAtomName, ResidueUtils.getResidueKey(residue)));
                     isChanged = true;
                 }
+                if (structureType == StructureType.MOLECULE) {
+                    final boolean isTemperatureFactorChanged = updateTemperatureFactor(
+                            ResidueUtils.getResidueKey(residue), atom.getTempFactor(), atoms.get(atomIndex),
+                            consistentAtomName);
+                    isChanged = isChanged || isTemperatureFactorChanged;
+                }
             }
         }
         if (isChanged) {
@@ -329,5 +383,21 @@ public final class ResidueUtils {
                 residue.addAtom(atom);
             }
         }
+    }
+
+    private static final boolean updateTemperatureFactor(final String residueKey,
+            final double temperatureFactor, final org.biojava.nbio.structure.Atom atom,
+            final String consistentAtomName) {
+        if ((Double.compare(temperatureFactor, DESCRIPTOR_CENTER_FLAG) == 0)
+                || (Double.compare(temperatureFactor, ELEMENT_CENTER_FLAG) == 0)) {
+            final double refinedTemperatureFactor = temperatureFactor + 0.01;
+            atom.setTempFactor(refinedTemperatureFactor);
+            LOGGER.warn(String
+                    .format("Temperature factor [%s] of atom [%s] is changed for [%s] in residue [%s] to solve a conflict with a general descriptor representation",
+                            String.format("%.2f", temperatureFactor), consistentAtomName,
+                            String.format("%.2f", refinedTemperatureFactor), residueKey));
+            return true;
+        }
+        return false;
     }
 }

@@ -43,5 +43,13 @@ public interface DescriptorsPair {
     int getFirstDescriptorElementSize();
     
     int getSecondDescriptorElementSize();
+    
+    String getFirstDescriptorString();
+    
+    String getSecondDescriptorString();
+    
+    List<Group> getFirstDescriptorResidues();
+    
+    List<Group> getSecondDescriptorResidues();
 
 }

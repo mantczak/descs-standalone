@@ -6,6 +6,7 @@ import org.biojava.nbio.structure.Chain;
 import org.biojava.nbio.structure.Group;
 import org.biojava.nbio.structure.Structure;
 
+import edu.put.ma.io.model.ModelInfo;
 import edu.put.ma.model.MoleculeType;
 
 public interface StructureExtension {
@@ -17,7 +18,7 @@ public interface StructureExtension {
     Structure getStructureWithoutResidues();
 
     Structure cloneStructureWithoutResidues();
-    
+
     int getModelsNo();
 
     List<Chain> getModelByIndex(int index);
@@ -35,6 +36,8 @@ public interface StructureExtension {
     boolean isValid();
 
     MoleculeType getMoleculeType();
-    
+
     String getInputFileBasename();
+
+    List<ModelInfo> getModelInfos();
 }

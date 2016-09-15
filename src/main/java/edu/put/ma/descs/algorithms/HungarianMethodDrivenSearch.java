@@ -13,7 +13,6 @@ import com.google.common.collect.Maps;
 
 import edu.put.ma.descs.ComparisonPrecision;
 import edu.put.ma.model.AlignedDuplexesPair;
-import edu.put.ma.model.Alignment;
 import edu.put.ma.model.DescriptorsPair;
 import edu.put.ma.model.ExtendedAlignment;
 import edu.put.ma.model.ExtendedAlignmentImpl;
@@ -49,14 +48,16 @@ public class HungarianMethodDrivenSearch extends CommonAlgorithm {
 
     @Override
     void extendAlignment(final DescriptorsPair descriptorsPair, final ExtendedAlignment currentAlignment,
-            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs) {
+            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         this.assignments = edu.put.ma.utils.CollectionUtils.prepareList(assignments);
         updateMaximalRmsdThresholdPerDuplexPair();
-        extend(descriptorsPair, currentAlignment, allAlignedDuplexesPairs);
+        extend(descriptorsPair, currentAlignment, allAlignedDuplexesPairs, alignmentAcceptanceMode);
     }
 
     private void extend(final DescriptorsPair descriptorsPair, final ExtendedAlignment currentAlignment,
-            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs) {
+            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         final int firstDescriptorOtherElementsCount = descriptorsPair.getFirstDescriptorElementsCount() - 1;
         final int secondDescriptorOtherElementsCount = descriptorsPair.getSecondDescriptorElementsCount() - 1;
         final int minOtherElementsCount = Math.min(firstDescriptorOtherElementsCount,
@@ -75,37 +76,127 @@ public class HungarianMethodDrivenSearch extends CommonAlgorithm {
                     maxOtherElementsCount, allAlignedDuplexesPairs, alignedDuplexPairsAccessMap);
             this.assignment = solveMaximumSizeAssignmentProblem(hungarianMethod, costs);
             final List<AlignedDuplexesPair> newAssignment = extendBasedOnAssignment(descriptorsPair,
-                    currentAlignment.copy(), Lists.newArrayList(currentAlignedDuplexPairs),
-                    allAlignedDuplexesPairs, feasibleOtherElementsCount, alignedDuplexPairsAccessMap);
+                    Lists.newArrayList(currentAlignedDuplexPairs), allAlignedDuplexesPairs,
+                    feasibleOtherElementsCount, alignedDuplexPairsAccessMap);
             if (!CollectionUtils.sizeIsEmpty(newAssignment)) {
-                if (type != AlgorithmType.THIRD) {
-                    addNewAssignment(newAssignment);
-                }
+                addNewAssignment(newAssignment);
                 if (firstAlignmentOnly) {
                     break;
                 }
             }
         }
-        analyseAlignments(descriptorsPair, currentAlignment);
+        if (type == AlgorithmType.THIRD) {
+            introducePartialAssignments(maxFeasibleOtherElementsCount);
+        }
+        analyseAlignments(descriptorsPair, currentAlignment, alignmentAcceptanceMode);
+    }
+
+    private void introducePartialAssignments(int maxFeasibleOtherElementsCount) {
+        final List<List<AlignedDuplexesPair>> generatedAssignments = Lists.newArrayList(assignments);
+        for (List<AlignedDuplexesPair> assignment : generatedAssignments) {
+            final int assignmentSize = CollectionUtils.size(assignment);
+            for (int feasiblePartialAssignmentSize = assignmentSize - 1; feasiblePartialAssignmentSize >= maxFeasibleOtherElementsCount; feasiblePartialAssignmentSize--) {
+                final double maxTotalRmsdThreshold = feasiblePartialAssignmentSize
+                        * maximalRmsdThresholdPerDuplexPair;
+                final int numberOfRejectedDuplexPairs = assignmentSize - feasiblePartialAssignmentSize;
+                if (numberOfRejectedDuplexPairs > 0) {
+                    identifyPartialAssignments(Lists.newArrayList(assignment), numberOfRejectedDuplexPairs,
+                            maxTotalRmsdThreshold, feasiblePartialAssignmentSize);
+                }
+            }
+        }
+    }
+
+    private void identifyPartialAssignments(final List<AlignedDuplexesPair> assignment,
+            final int numberOfRejectedDuplexPairs, final double maxTotalRmsdThreshold,
+            final int feasiblePartialAssignmentSize) {
+        if (numberOfRejectedDuplexPairs == 0) {
+            insertPartialAssignmentEnsuringAssignmentSizesOrder(assignment, feasiblePartialAssignmentSize,
+                    maxTotalRmsdThreshold);
+        } else {
+            for (int alignedPairIndex = 0; alignedPairIndex < CollectionUtils.size(assignment); alignedPairIndex++) {
+                final AlignedDuplexesPair alignedDuplexesPair = assignment.remove(alignedPairIndex);
+                identifyPartialAssignments(assignment, numberOfRejectedDuplexPairs - 1,
+                        maxTotalRmsdThreshold, feasiblePartialAssignmentSize);
+                assignment.add(alignedPairIndex, alignedDuplexesPair);
+            }
+        }
+    }
+
+    private void insertPartialAssignmentEnsuringAssignmentSizesOrder(
+            final List<AlignedDuplexesPair> assignment, final int assignmentSize,
+            final double maxTotalRmsdThreshold) {
+        if ((isNewAssignment(assignment, assignmentSize))
+                && (Double.compare(ExtendedAlignmentImpl.computeTotalRmsd(assignment), maxTotalRmsdThreshold) <= 0)) {
+            final int offset = findIndexOfAssignmentWithLowerSize(assignmentSize);
+            addNewAssignment(offset, Lists.newArrayList(assignment));
+        }
+    }
+
+    private int findIndexOfAssignmentWithLowerSize(int newAssignmentSize) {
+        int offset = -1;
+        int assignmentIndex = 0;
+        for (List<AlignedDuplexesPair> assignment : assignments) {
+            final int assignmentSize = CollectionUtils.size(assignment);
+            if (assignmentSize < newAssignmentSize) {
+                offset = assignmentIndex;
+                break;
+            }
+            assignmentIndex++;
+        }
+        return offset;
+    }
+
+    private boolean isNewAssignment(final List<AlignedDuplexesPair> newAssignment, final int newAssignmentSize) {
+        boolean isNew = true;
+        for (List<AlignedDuplexesPair> assignment : assignments) {
+            final int assignmentSize = CollectionUtils.size(assignment);
+            if ((newAssignmentSize > assignmentSize)
+                    || ((newAssignmentSize == assignmentSize) && (CollectionUtils.isEqualCollection(
+                            assignment, newAssignment)))) {
+                if (newAssignmentSize == assignmentSize) {
+                    isNew = false;
+                }
+                break;
+            }
+        }
+        return isNew;
     }
 
     private void analyseAlignments(final DescriptorsPair descriptorsPair,
-            final ExtendedAlignment currentAlignment) {
-        for (List<AlignedDuplexesPair> assignment : assignments) {
+            final ExtendedAlignment currentAlignment, final AlignmentAcceptanceMode alignmentAcceptanceMode) {
+        final List<List<AlignedDuplexesPair>> currentAssignments = Lists.newArrayList(assignments);
+        while (!CollectionUtils.sizeIsEmpty(currentAssignments)) {
+            final List<AlignedDuplexesPair> longerAssignment = currentAssignments.remove(0);
             final ExtendedAlignment currentAlignmentCopy = currentAlignment.copy();
-            final Alignment extension = descriptorsComparator.constructExtension(descriptorsPair,
-                    currentAlignmentCopy.getCurrentAlignment(), assignment, precision);
-            if (extension != null) {
-                currentAlignmentCopy.setAlignedDuplexPairs(assignment, extension,
-                        descriptorsComparator.getAlignmentAtomsCount());
-                updateLongestAlignment(descriptorsPair, currentAlignmentCopy, precision,
-                        !CREATE_NEW_INSTANCE_OF_CURRENT_ALIGNMENT);
+            descriptorsComparator.constructExtension(descriptorsPair,
+                    currentAlignmentCopy.getCurrentAlignment(), longerAssignment, precision);
+            currentAlignmentCopy.setAlignedDuplexPairs(longerAssignment);
+            final boolean newLongestAlignmentFound = updateLongestAlignment(descriptorsPair,
+                    currentAlignmentCopy, precision, !CREATE_NEW_INSTANCE_OF_CURRENT_ALIGNMENT,
+                    alignmentAcceptanceMode);
+            if ((newLongestAlignmentFound)
+                    || ((!newLongestAlignmentFound) && (longestAlignment.isFirstAlignmentFound()))) {
+                filterSubAlignments(longerAssignment, currentAssignments);
+            }
+        }
+    }
+
+    private void filterSubAlignments(final List<AlignedDuplexesPair> longerAssignment,
+            final List<List<AlignedDuplexesPair>> currentAssignments) {
+        final int currentAssignmentSize = CollectionUtils.size(longerAssignment);
+        final int assignmentsCount = CollectionUtils.size(currentAssignments);
+        for (int assignmentIndex = assignmentsCount - 1; assignmentIndex >= 0; assignmentIndex--) {
+            final List<AlignedDuplexesPair> currentAssignment = currentAssignments.get(assignmentIndex);
+            final int assignmentSize = CollectionUtils.size(currentAssignment);
+            if ((assignmentSize < currentAssignmentSize)
+                    && (CollectionUtils.containsAll(longerAssignment, currentAssignment))) {
+                currentAssignments.remove(assignmentIndex);
             }
         }
     }
 
     private List<AlignedDuplexesPair> extendBasedOnAssignment(final DescriptorsPair descriptorsPair,
-            final ExtendedAlignment currentAlignment,
             final List<AlignedDuplexesPair> currentAlignedDuplexPairs,
             final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
             final int feasibleOtherElementsCount,
@@ -125,8 +216,7 @@ public class HungarianMethodDrivenSearch extends CommonAlgorithm {
                     firstDescriptorElementIndex).get(secondDescriptorElementIndex);
             final AlignedDuplexesPair alignedDuplexPair = allAlignedDuplexesPairs.get(
                     firstDescriptorElementIndex).get(secondDescriptorElementAccessIndex);
-            extendWithAlignedDuplexPair(descriptorsPair, currentAlignment, currentAlignedDuplexPairs,
-                    maxTotalRmsdThreshold, alignedDuplexPair);
+            currentAlignedDuplexPairs.add(alignedDuplexPair);
         }
         if ((type != AlgorithmType.THIRD)
                 && (Double.compare(ExtendedAlignmentImpl.computeTotalRmsd(currentAlignedDuplexPairs),
@@ -136,30 +226,18 @@ public class HungarianMethodDrivenSearch extends CommonAlgorithm {
         return currentAlignedDuplexPairs;
     }
 
-    private void extendWithAlignedDuplexPair(final DescriptorsPair descriptorsPair,
-            final ExtendedAlignment currentAlignment,
-            final List<AlignedDuplexesPair> currentAlignedDuplexPairs, final double maxTotalRmsdThreshold,
-            final AlignedDuplexesPair alignedDuplexPair) {
-        currentAlignedDuplexPairs.add(alignedDuplexPair);
-        if ((type != AlgorithmType.FIRST)
-                && ((Double.compare(ExtendedAlignmentImpl.computeTotalRmsd(currentAlignedDuplexPairs),
-                        maxTotalRmsdThreshold) <= 0) && (type == AlgorithmType.THIRD))) {
-            final Alignment extension = descriptorsComparator.constructExtension(descriptorsPair,
-                    currentAlignment.getCurrentAlignment(), alignedDuplexPair, precision);
-            if (extension != null) {
-                currentAlignment.addAlignedDuplexesPair(alignedDuplexPair, extension,
-                        descriptorsComparator.getAlignmentAtomsCount());
-                final List<AlignedDuplexesPair> newAlignment = Lists.newArrayList(currentAlignedDuplexPairs);
-                addNewAssignment(newAlignment);
-            } else {
-                removeLastAlignedDuplexesPair(currentAlignedDuplexPairs);
-            }
-        }
+    private void addNewAssignment(final List<AlignedDuplexesPair> newAssignment) {
+        addNewAssignment(-1, newAssignment);
     }
 
-    private void addNewAssignment(final List<AlignedDuplexesPair> newAssignment) {
+    private void addNewAssignment(final int offset, final List<AlignedDuplexesPair> newAssignment) {
         if (shouldBeConsideredAsPotentialSolution(newAssignment)) {
-            assignments.add(newAssignment);
+            final int assignmentsCount = CollectionUtils.size(assignments);
+            if ((offset >= 0) && (offset < assignmentsCount)) {
+                assignments.add(offset, newAssignment);
+            } else {
+                assignments.add(newAssignment);
+            }
         }
     }
 
@@ -185,12 +263,6 @@ public class HungarianMethodDrivenSearch extends CommonAlgorithm {
             this.maximalRmsdThresholdPerDuplexPair = descriptorsComparator
                     .getMaximalRmsdThresholdPerDuplexPair();
         }
-    }
-
-    private static final void removeLastAlignedDuplexesPair(
-            final List<AlignedDuplexesPair> currentAlignedDuplexPairs) {
-        final int currentAlignedDuplexPairsCount = CollectionUtils.size(currentAlignedDuplexPairs);
-        currentAlignedDuplexPairs.remove(currentAlignedDuplexPairsCount - 1);
     }
 
     private static final int[][] solveMaximumSizeAssignmentProblem(final HungarianMethod hungarianMethod,

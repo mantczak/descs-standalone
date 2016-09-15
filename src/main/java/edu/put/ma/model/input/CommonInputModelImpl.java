@@ -1,5 +1,7 @@
 package edu.put.ma.model.input;
 
+import static edu.put.ma.utils.StringUtils.NEW_LINE;
+
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,7 @@ import edu.put.ma.ExecutionMode;
 import edu.put.ma.descs.AlignmentMode;
 import edu.put.ma.descs.DescriptorsFilterImpl;
 import edu.put.ma.descs.SimilarDescriptorsVerifierImpl;
+import edu.put.ma.descs.algorithms.AlignmentAcceptanceMode;
 import edu.put.ma.descs.algorithms.ComparisonAlgorithms;
 import edu.put.ma.io.FormatType;
 import edu.put.ma.model.MoleculeType;
@@ -31,10 +34,6 @@ import edu.put.ma.utils.PreconditionUtils;
 
 public abstract class CommonInputModelImpl implements CommonInputModel {
 
-    private static final int COMMON_ARGUMENTS_COUNT = 2;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(CommonInputModelImpl.class);
-
     public static final FormatType DEFAULT_FORMAT = FormatType.PDB;
 
     protected static final MoleculeType DEFAULT_MOLECULE = MoleculeType.PROTEIN;
@@ -43,7 +42,18 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
 
     protected static final AlignmentMode DEFAULT_ALIGNMENT_MODE = AlignmentMode.IGNORE;
 
+    protected static final AlignmentAcceptanceMode DEFAULT_ALIGNMENT_ACCEPTANCE_MODE = AlignmentAcceptanceMode.ALIGNED_RESIDUES_AND_AVERAGE_RMSD_OF_ALIGNED_DUPLEXES;
+
     protected static final ComparisonAlgorithms DEFAULT_ALGORITHM_TYPE = ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT;
+
+    private static final int COMMON_ARGUMENTS_COUNT = 2;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommonInputModelImpl.class);
+
+    @Getter
+    protected String inputModelString;
+
+    protected Map<String, String> optionsMapping;
 
     private CommandLine commandLine;
 
@@ -54,11 +64,6 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
 
     @Getter
     private FormatType outputFormat;
-
-    @Getter
-    protected String inputModelString;
-
-    protected Map<String, String> optionsMapping;
 
     protected CommonInputModelImpl(final String[] args) {
         this.options = constructCommonOptions();
@@ -99,56 +104,6 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
         }
         resultSize = CollectionUtils.size(result);
         return result.toArray(new String[resultSize]);
-    }
-
-    private List<String> processDeclaredFields(final Class<?> currentClass, final Object object) {
-        final List<String> result = Lists.newArrayList();
-        for (Field field : currentClass.getDeclaredFields()) {
-            field.setAccessible(true);
-            try {
-                final String fieldName = field.getName();
-                final Object fieldObject = field.get(object);
-                if ((this.optionsMapping.containsKey(fieldName))
-                        && (isConsideredString(field, fieldObject)
-                                || isConsideredPrimitive(field, fieldObject) || isNotNullOtherInstance(field,
-                                    fieldObject))) {
-                    result.add(optionsMapping.get(fieldName));
-                    result.add(String.valueOf(fieldObject));
-                } else if (areParticularInstancesConsidered(field, fieldObject)) {
-                    final List<String> nestedResult = processDeclaredFields(fieldObject.getClass(),
-                            fieldObject);
-                    CollectionUtils.addAll(result, nestedResult);
-                }
-            } catch (IllegalArgumentException e) {
-                LOGGER.error(e.getMessage(), e);
-            } catch (IllegalAccessException e) {
-                LOGGER.error(e.getMessage(), e);
-            }
-        }
-        return result;
-    }
-
-    private boolean isNotNullOtherInstance(final Field field, final Object fieldObject) {
-        return (!((field.getType().isAssignableFrom((Class<?>) Integer.TYPE)) || (field.getType()
-                .isAssignableFrom((Class<?>) Double.TYPE)))) && (fieldObject != null);
-    }
-
-    private boolean isConsideredString(final Field field, final Object fieldObject) {
-        return (field.getType().isAssignableFrom((Class<?>) String.class))
-                && (StringUtils.isNotBlank(String.valueOf(fieldObject)));
-    }
-
-    private boolean isConsideredPrimitive(final Field field, final Object fieldObject) {
-        return ((field.getType().isAssignableFrom((Class<?>) Integer.TYPE)) && (((Integer) fieldObject)
-                .intValue() > 0))
-                || ((field.getType().isAssignableFrom((Class<?>) Double.TYPE)) && (Double.compare(
-                        ((Double) fieldObject).doubleValue(), 0.0) > 0));
-    }
-
-    private boolean areParticularInstancesConsidered(final Field field, final Object fieldObject) {
-        return ((field.getType().isAssignableFrom((Class<?>) DescriptorsFilterImpl.class)) || (field
-                .getType().isAssignableFrom((Class<?>) SimilarDescriptorsVerifierImpl.class)))
-                && (fieldObject != null);
     }
 
     public static final <T extends Enum<T>> T getEnumValue(final CommandLine commandLine,
@@ -222,9 +177,59 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
         }
     }
 
+    private List<String> processDeclaredFields(final Class<?> currentClass, final Object object) {
+        final List<String> result = Lists.newArrayList();
+        for (Field field : currentClass.getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                final String fieldName = field.getName();
+                final Object fieldObject = field.get(object);
+                if ((this.optionsMapping.containsKey(fieldName))
+                        && (isConsideredString(field, fieldObject)
+                                || isConsideredPrimitive(field, fieldObject) || isNotNullOtherInstance(field,
+                                    fieldObject))) {
+                    result.add(optionsMapping.get(fieldName));
+                    result.add(String.valueOf(fieldObject));
+                } else if (areParticularInstancesConsidered(field, fieldObject)) {
+                    final List<String> nestedResult = processDeclaredFields(fieldObject.getClass(),
+                            fieldObject);
+                    CollectionUtils.addAll(result, nestedResult);
+                }
+            } catch (IllegalArgumentException e) {
+                LOGGER.error(e.getMessage(), e);
+            } catch (IllegalAccessException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+        return result;
+    }
+
+    private boolean isNotNullOtherInstance(final Field field, final Object fieldObject) {
+        return (!((field.getType().isAssignableFrom((Class<?>) Integer.TYPE)) || (field.getType()
+                .isAssignableFrom((Class<?>) Double.TYPE)))) && (fieldObject != null);
+    }
+
+    private boolean isConsideredString(final Field field, final Object fieldObject) {
+        return (field.getType().isAssignableFrom((Class<?>) String.class))
+                && (StringUtils.isNotBlank(String.valueOf(fieldObject)));
+    }
+
+    private boolean isConsideredPrimitive(final Field field, final Object fieldObject) {
+        return ((field.getType().isAssignableFrom((Class<?>) Integer.TYPE)) && (((Integer) fieldObject)
+                .intValue() > 0))
+                || ((field.getType().isAssignableFrom((Class<?>) Double.TYPE)) && (Double.compare(
+                        ((Double) fieldObject).doubleValue(), 0.0) > 0));
+    }
+
+    private boolean areParticularInstancesConsidered(final Field field, final Object fieldObject) {
+        return ((field.getType().isAssignableFrom((Class<?>) DescriptorsFilterImpl.class)) || (field
+                .getType().isAssignableFrom((Class<?>) SimilarDescriptorsVerifierImpl.class)))
+                && (fieldObject != null);
+    }
+
     private void initInputModelString() {
-        inputModelString = new StringBuilder("Input format: ").append(inputFormat).append("\n")
-                .append("Output format: ").append(outputFormat).append("\n").toString();
+        inputModelString = new StringBuilder("Input format: ").append(inputFormat)
+                .append("\nOutput format: ").append(outputFormat).append(NEW_LINE).toString();
     }
 
     private void setInputFormat() {
@@ -260,8 +265,8 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
     private static final Options constructCommonOptions() {
         final String formatTypeNamesString = ArrayUtils.getEnumNamesString(FormatType.class);
         final Options options = new Options();
-        options.addOption("if", "input-format", true, "provided file formats: " + formatTypeNamesString);
-        options.addOption("of", "output-format", true, "provided file formats: " + formatTypeNamesString);
+        options.addOption("if", "input-format", true, "supported file formats: " + formatTypeNamesString);
+        options.addOption("of", "output-format", true, "supported file formats: " + formatTypeNamesString);
         return options;
     }
 

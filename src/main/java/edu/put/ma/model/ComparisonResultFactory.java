@@ -20,9 +20,10 @@ public class ComparisonResultFactory {
 
     public static final ComparisonResult construct(
             final SimilarDescriptorsVerifier similarDescriptorsVerifier,
-            final double originElementsAlignmentRmsd, final SVDSuperimposer superimposer) {
+            final double originElementsAlignmentRmsd, final SVDSuperimposer superimposer,
+            final String sequenceAlignment) {
         return new ComparisonResultImpl(similarDescriptorsVerifier, originElementsAlignmentRmsd,
-                superimposer, 1.0, 1.0);
+                superimposer, sequenceAlignment);
     }
 
     public static final ComparisonResult construct(final ComparisonResult comparisonResult) {
