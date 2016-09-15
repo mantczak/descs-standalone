@@ -124,19 +124,43 @@ public class DescriptorsPairImpl implements DescriptorsPair {
 
     @Override
     public int getFirstDescriptorElementSize() {
-        return (firstDescriptor.getNeighbourhoodSize() << 1) + 1;
+        return getDescriptorElementSize(firstDescriptor.getNeighbourhoodSize());
     }
 
     @Override
     public int getSecondDescriptorElementSize() {
-        return (secondDescriptor.getNeighbourhoodSize() << 1) + 1;
+        return getDescriptorElementSize(secondDescriptor.getNeighbourhoodSize());
+    }
+
+    @Override
+    public String getFirstDescriptorString() {
+        return firstDescriptor.toStringWithoutOriginResidueIndex();
+    }
+
+    @Override
+    public String getSecondDescriptorString() {
+        return secondDescriptor.toStringWithoutOriginResidueIndex();
+    }
+
+    @Override
+    public List<Group> getFirstDescriptorResidues() {
+        return firstDescriptor.getResidues();
+    }
+
+    @Override
+    public List<Group> getSecondDescriptorResidues() {
+        return secondDescriptor.getResidues();
+    }
+
+    private static final int getDescriptorElementSize(final int neighbourhoodSize) {
+        return (neighbourhoodSize << 1) + 1;
     }
 
     private static final void saveDescriptor(final Descriptor descriptor, final File outputDir,
             final Writer writer) {
         final File descriptorFile = FileUtils.getFile(outputDir, descriptor.getId());
         synchronized (writer) {
-            writer.writeAtomsOnly(descriptor.getStructure(), descriptorFile);
+            writer.write(descriptor.getStructure(), descriptorFile);
         }
     }
 

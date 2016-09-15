@@ -52,7 +52,7 @@ public class DescriptorsFilterImpl implements DescriptorsFilter {
     public boolean isAppropriate(final Descriptor descriptor) {
         final int segmentsCount = descriptor.getSegmentsCount();
         final int elementsCount = descriptor.getElementsCount();
-        final int residuesCount = descriptor.getSegmentsCount();
+        final int residuesCount = descriptor.getResiduesCount();
         return isInRange(segmentsCount, minimalSegmentsCount, maximalSegmentsCount)
                 && isInRange(elementsCount, minimalElementsCount, maximalElementsCount)
                 && isInRange(residuesCount, minimalResiduesCount, maximalResiduesCount);
@@ -61,11 +61,11 @@ public class DescriptorsFilterImpl implements DescriptorsFilter {
     @Override
     public String toString() {
         return new StringBuilder().append("Minimal segments count: ").append(minimalSegmentsCount)
-                .append("\n").append("Maximal segments count: ").append(maximalSegmentsCount).append("\n")
-                .append("Minimal elements count: ").append(minimalElementsCount).append("\n")
-                .append("Maximal elements count: ").append(maximalElementsCount).append("\n")
-                .append("Minimal residues count: ").append(minimalResiduesCount).append("\n")
-                .append("Maximal residues count: ").append(maximalResiduesCount).toString();
+                .append("\nMaximal segments count: ").append(maximalSegmentsCount)
+                .append("\nMinimal elements count: ").append(minimalElementsCount)
+                .append("\nMaximal elements count: ").append(maximalElementsCount)
+                .append("\nMinimal residues count: ").append(minimalResiduesCount)
+                .append("\nMaximal residues count: ").append(maximalResiduesCount).toString();
     }
 
     public static class Builder {

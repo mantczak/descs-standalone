@@ -5,4 +5,6 @@ public interface FormatConverterInputModel extends CommonInputModel {
     String getInputFilePath();
 
     String getOutputFilePath();
+
+    boolean isValid();
 }

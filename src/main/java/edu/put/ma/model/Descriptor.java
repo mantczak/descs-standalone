@@ -26,9 +26,13 @@ public interface Descriptor {
 
     String toString();
 
+    String toStringWithoutOriginResidueIndex();
+
     List<Group> getOriginElementResidues(ResiduesAccess residuesAccess);
 
     void rotateAndShift(SVDSuperimposer superimposer);
 
     List<Group> getOtherElementResiduesByIndex(int otherElementIndex, ResiduesAccess residuesAccess);
+    
+    List<Group> getResidues();
 }

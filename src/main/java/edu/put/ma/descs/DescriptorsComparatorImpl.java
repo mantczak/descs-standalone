@@ -1,8 +1,9 @@
 package edu.put.ma.descs;
 
+import static edu.put.ma.utils.StringUtils.NEW_LINE;
+
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -22,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import edu.put.ma.descs.algorithms.AlignmentAcceptanceMode;
 import edu.put.ma.descs.algorithms.CommonAlgorithm;
 import edu.put.ma.descs.algorithms.ComparisonAlgorithm;
 import edu.put.ma.descs.contacts.AtomsStorage;
@@ -44,6 +46,8 @@ import edu.put.ma.utils.ResidueUtils;
 
 public class DescriptorsComparatorImpl implements DescriptorsComparator {
 
+    private static final boolean INSERT_NON_ALIGNED_RESIDUES_OF_SECOND_DESCRIPTOR = true;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DescriptorsComparatorImpl.class);
 
     private final ComparisonAlgorithm comparisonAlgorithm;
@@ -60,16 +64,20 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
     @Getter
     private final double maximalRmsdThresholdPerDuplexPair;
 
+    private final AlignmentAcceptanceMode alignmentAcceptanceMode;
+
     @Getter
     private Map<Integer, List<AlignedDuplexesPair>> duplexPairsSimilarityContainer;
 
     public DescriptorsComparatorImpl(final ComparisonAlgorithm comparisonAlgorithm,
             final SimilarDescriptorsVerifier similarDescriptorsVerifier,
-            final double maximalRmsdThresholdPerDuplexPair, final ImmutableList<String> alignmentAtomNames) {
+            final double maximalRmsdThresholdPerDuplexPair, final ImmutableList<String> alignmentAtomNames,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         this.comparisonAlgorithm = comparisonAlgorithm;
         this.similarDescriptorsVerifier = similarDescriptorsVerifier;
         this.maximalRmsdThresholdPerDuplexPair = maximalRmsdThresholdPerDuplexPair;
         this.alignmentAtomNames = alignmentAtomNames;
+        this.alignmentAcceptanceMode = alignmentAcceptanceMode;
         this.firstDescriptorAtomsStorage = AtomsStorageFactory.construct();
         this.secondDescriptorAtomsStorage = AtomsStorageFactory.construct();
         this.duplexPairsSimilarityContainer = Maps.newHashMap();
@@ -90,9 +98,12 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
                 LOGGER.info(getDuplexPairsString());
                 if (canBeStructurallySimilar(descriptorsPair)) {
                     final ExtendedAlignment alignment = comparisonAlgorithm.extendAlignment(this,
-                            descriptorsPair, extendedOriginElementsAlignment);
+                            descriptorsPair, extendedOriginElementsAlignment, alignmentAcceptanceMode);
                     LOGGER.info(alignment.getAlignedDuplexesPairsString());
+                    final String sequenceAlignment = computeSequenceAlignment(descriptorsPair, alignment,
+                            INSERT_NON_ALIGNED_RESIDUES_OF_SECOND_DESCRIPTOR);
                     comparisonResult = alignment.getComparisonResult();
+                    comparisonResult.setSequenceAlignment(sequenceAlignment);
                 }
             }
         }
@@ -115,22 +126,16 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
     public Alignment constructExtension(final DescriptorsPair descriptorsPair,
             final Alignment currentAlignment, final List<AlignedDuplexesPair> alignedDuplexPairs,
             final ComparisonPrecision precision) {
-        final Alignment newAlignment = null;
-        final MoleculeType moleculeType = descriptorsPair.getMoleculeType();
         final int alignedDuplexPairsCount = CollectionUtils.size(alignedDuplexPairs);
-        final List<Group> newResiduesForFirstDescriptor = Lists.newArrayList();
-        final List<Group> newResiduesForSecondDescriptor = Lists.newArrayList();
         if (alignedDuplexPairsCount > 1) {
-            constructExtensionBasedOnAlignedDuplexPairs(descriptorsPair, currentAlignment,
-                    alignedDuplexPairs, newResiduesForFirstDescriptor, newResiduesForSecondDescriptor);
+            return constructExtensionBasedOnAlignedDuplexPairs(descriptorsPair, currentAlignment,
+                    alignedDuplexPairs);
         } else {
+            final MoleculeType moleculeType = descriptorsPair.getMoleculeType();
+            final List<Group> newResiduesForFirstDescriptor = Lists.newArrayList();
+            final List<Group> newResiduesForSecondDescriptor = Lists.newArrayList();
             constructExtensionBasedOnAlignedDuplexesPair(descriptorsPair, currentAlignment,
                     alignedDuplexPairs, newResiduesForFirstDescriptor, newResiduesForSecondDescriptor);
-        }
-        final int newResiduesForFirstDescriptorCount = CollectionUtils.size(newResiduesForFirstDescriptor);
-        final int newResiduesForSecondDescriptorCount = CollectionUtils.size(newResiduesForSecondDescriptor);
-        if (newResiduesForFirstDescriptorCount > 0 && newResiduesForSecondDescriptorCount > 0
-                && newResiduesForFirstDescriptorCount == newResiduesForSecondDescriptorCount) {
             final boolean rmsdShouldBeConsidered = ComparisonPrecision.ALL_RULES_CONSIDERED
                     .atLeast(precision);
             if (rmsdShouldBeConsidered) {
@@ -149,20 +154,14 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
                     CollectionUtils.addAll(newAtomsForSecondDescriptor,
                             currentAlignment.identifyNewAtomsForSecondDescriptor(secondDescriptorNewAtoms));
                 }
-                if (CollectionUtils.size(newAtomsForFirstDescriptor) == CollectionUtils
-                        .size(newAtomsForSecondDescriptor)) {
-                    return AlignmentFactory.construct(newResiduesForFirstDescriptor,
-                            newAtomsForFirstDescriptor, newResiduesForSecondDescriptor,
-                            newAtomsForSecondDescriptor);
-                }
+                return AlignmentFactory.construct(newResiduesForFirstDescriptor, newAtomsForFirstDescriptor,
+                        newResiduesForSecondDescriptor, newAtomsForSecondDescriptor);
             } else {
                 final List<Atom> empty = edu.put.ma.utils.CollectionUtils.emptyList();
                 return AlignmentFactory.construct(newResiduesForFirstDescriptor, empty,
                         newResiduesForSecondDescriptor, empty);
             }
-
         }
-        return newAlignment;
     }
 
     @Override
@@ -225,37 +224,30 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
         CollectionUtils
                 .addAll(newResiduesForSecondDescriptor, currentAlignment
                         .identifyNewResiduesForSecondDescriptor(secondDescriptorOtherElementResidues));
+        final int firstDescriptorNewResiduesCount = org.apache.commons.collections4.CollectionUtils
+                .size(newResiduesForFirstDescriptor);
+        final int secondDescriptorNewResiduesCount = org.apache.commons.collections4.CollectionUtils
+                .size(newResiduesForSecondDescriptor);
+        if (firstDescriptorNewResiduesCount != secondDescriptorNewResiduesCount) {
+            unifyResidues(firstDescriptorOtherElementResidues, newResiduesForFirstDescriptor,
+                    secondDescriptorOtherElementResidues, newResiduesForSecondDescriptor, currentAlignment);
+        }
     }
 
-    private void constructExtensionBasedOnAlignedDuplexPairs(final DescriptorsPair descriptorsPair,
-            final Alignment currentAlignment, final List<AlignedDuplexesPair> alignedDuplexPairs,
-            final List<Group> allResiduesForFirstDescriptor, final List<Group> allResiduesForSecondDescriptor) {
-        CollectionUtils.addAll(allResiduesForFirstDescriptor, currentAlignment.getFirstDescriptorResidues());
-        CollectionUtils
-                .addAll(allResiduesForSecondDescriptor, currentAlignment.getSecondDescriptorResidues());
-        for (AlignedDuplexesPair alignedDuplexesPair : alignedDuplexPairs) {
-            final int firstDescriptorOtherElementIndex = alignedDuplexesPair
-                    .getFirstDescriptorOtherElementIndex();
-            final List<Group> firstDescriptorOtherElementResidues = descriptorsPair
-                    .getFirstDescriptorOtherElementResiduesByIndex(firstDescriptorOtherElementIndex);
-            final List<Group> newResiduesForFirstDescriptorOfOtherElement = edu.put.ma.utils.CollectionUtils
-                    .identifyNewElements(allResiduesForFirstDescriptor, firstDescriptorOtherElementResidues);
-            allResiduesForFirstDescriptor.addAll(newResiduesForFirstDescriptorOfOtherElement);
-            final int secondDescriptorOtherElementIndex = alignedDuplexesPair
-                    .getSecondDescriptorOtherElementIndex();
-            final List<Group> secondDescriptorOtherElementResidues = descriptorsPair
-                    .getSecondDescriptorOtherElementResiduesByIndex(secondDescriptorOtherElementIndex);
-            final List<Group> newResiduesForSecondDescriptorOfOtherElement = edu.put.ma.utils.CollectionUtils
-                    .identifyNewElements(allResiduesForSecondDescriptor, secondDescriptorOtherElementResidues);
-            allResiduesForSecondDescriptor.addAll(newResiduesForSecondDescriptorOfOtherElement);
-        }
-        final Comparator<Group> comparator = new Comparator<Group>() {
-            public int compare(final Group firstResidue, final Group secondResidue) {
-                return firstResidue.getResidueNumber().compareTo(secondResidue.getResidueNumber());
+    private Alignment constructExtensionBasedOnAlignedDuplexPairs(final DescriptorsPair descriptorsPair,
+            final Alignment currentAlignment, final List<AlignedDuplexesPair> alignedDuplexPairs) {
+        final List<AlignedDuplexesPair> alignedDPs = Lists.newArrayList(alignedDuplexPairs);
+        for (AlignedDuplexesPair alignedDuplexesPair : alignedDPs) {
+            final Alignment extension = this.constructExtension(descriptorsPair, currentAlignment,
+                    alignedDuplexesPair, ComparisonPrecision.ALL_RULES_CONSIDERED);
+            if (extension.getAlignedResiduesCount() > 0) {
+                currentAlignment.extend(extension, this.getAlignmentAtomsCount(),
+                        descriptorsPair.getMoleculeType());
+            } else {
+                alignedDuplexPairs.remove(alignedDuplexesPair);
             }
-        };
-        Collections.sort(allResiduesForFirstDescriptor, comparator);
-        Collections.sort(allResiduesForSecondDescriptor, comparator);
+        }
+        return currentAlignment;
     }
 
     private void computeDuplexPairsSimilarityMatrix(final DescriptorsPair descriptorsPair,
@@ -361,13 +353,45 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
                 "There is no possibility to verify structural similarity of origin elements",
                 "residues number");
         final MoleculeType moleculeType = descriptorsPair.getMoleculeType();
+        final String sequenceAlignment = getSequence(firstDescriptorOriginElementResidues, moleculeType)
+                + NEW_LINE + getSequence(secondDescriptorOriginElementResidues, moleculeType);
         final List<Atom> firstDescriptorAlignmentAtoms = getAlignmentAtomsOfResidues(moleculeType,
                 alignmentAtomNames, firstDescriptorAtomsStorage, firstDescriptorOriginElementResidues);
         final List<Atom> secondDescriptorAlignmentAtoms = getAlignmentAtomsOfResidues(moleculeType,
                 alignmentAtomNames, secondDescriptorAtomsStorage, secondDescriptorOriginElementResidues);
         comparisonResult = compareOriginElementsOfDescriptors(firstDescriptorAlignmentAtoms,
-                secondDescriptorAlignmentAtoms, similarDescriptorsVerifier);
+                secondDescriptorAlignmentAtoms, similarDescriptorsVerifier, sequenceAlignment);
         return comparisonResult;
+    }
+
+    private static final void unifyResidues(final List<Group> firstDescriptorOtherElementResidues,
+            final List<Group> newResiduesForFirstDescriptor,
+            final List<Group> secondDescriptorOtherElementResidues,
+            final List<Group> newResiduesForSecondDescriptor, final Alignment currentAlignment) {
+        newResiduesForFirstDescriptor.clear();
+        newResiduesForSecondDescriptor.clear();
+        for (int residueIndex = 0; residueIndex < CollectionUtils.size(firstDescriptorOtherElementResidues); residueIndex++) {
+            final Group firstDescriptorOtherElementResidue = firstDescriptorOtherElementResidues
+                    .get(residueIndex);
+            final Group secondDescriptorOtherElementResidue = secondDescriptorOtherElementResidues
+                    .get(residueIndex);
+            if ((!currentAlignment.isResidueCoveredByFirstDescriptor(firstDescriptorOtherElementResidue))
+                    && (!currentAlignment
+                            .isResidueCoveredBySecondDescriptor(secondDescriptorOtherElementResidue))) {
+                newResiduesForFirstDescriptor.add(0, firstDescriptorOtherElementResidue);
+                newResiduesForSecondDescriptor.add(0, secondDescriptorOtherElementResidue);
+            }
+        }
+    }
+
+    private static final String getSequence(final List<Group> residues, final MoleculeType moleculeType) {
+        final StringBuilder sequenceBuilder = new StringBuilder();
+        for (Group residue : residues) {
+            final Residue residueEntry = ResiduesDictionary.getResidueEntry(residue.getPDBName(),
+                    moleculeType);
+            sequenceBuilder.append(residueEntry.getSingleLetterCode());
+        }
+        return sequenceBuilder.toString();
     }
 
     private static final RmsdModel computeAlignmentRmsd(final List<Atom> targetAtoms,
@@ -394,7 +418,7 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
 
     private static final ComparisonResult compareOriginElementsOfDescriptors(
             final List<Atom> firstDescriptorAlignmentAtoms, final List<Atom> secondDescriptorAlignmentAtoms,
-            final SimilarDescriptorsVerifier similarDescriptorsVerifier) {
+            final SimilarDescriptorsVerifier similarDescriptorsVerifier, final String sequenceAlignment) {
         PreconditionUtils.checkIfInputListsHaveEqualSizes(firstDescriptorAlignmentAtoms,
                 secondDescriptorAlignmentAtoms, "There is no possibility to superimpose atom sets", "size");
         final List<Atom> secondDescriptorAlignmentAtomsCopy = copyAlignmentAtoms(secondDescriptorAlignmentAtoms);
@@ -408,7 +432,7 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
         final double originElementsPairAlignmentRmsd = computeRmsd(firstDescriptorAlignmentAtomsArray,
                 secondDescriptorAlignmentAtomsArray, superimposer);
         return ComparisonResultFactory.construct(similarDescriptorsVerifier, originElementsPairAlignmentRmsd,
-                superimposer);
+                superimposer, sequenceAlignment);
     }
 
     private static final List<Atom> getAlignmentAtomsOfResidues(final MoleculeType moleculeType,
@@ -471,5 +495,124 @@ public class DescriptorsComparatorImpl implements DescriptorsComparator {
             LOGGER.error(e.getMessage(), e);
         }
         return superimposer;
+    }
+
+    private static final String computeSequenceAlignment(final DescriptorsPair descriptorsPair,
+            final ExtendedAlignment currentAlignment, final boolean insertNonAlignedResiduesOfSecondDescriptor) {
+        final List<Group> firstDescriptorResidues = descriptorsPair.getFirstDescriptorResidues();
+        final List<Group> secondDescriptorResidues = descriptorsPair.getSecondDescriptorResidues();
+        final List<Group> firstDescriptorAlignedResidues = currentAlignment.getCurrentAlignment()
+                .getFirstDescriptorResidues();
+        final List<Group> secondDescriptorAlignedResidues = currentAlignment.getCurrentAlignment()
+                .getSecondDescriptorResidues();
+        final StringBuilder firstDescriptorAlignment = new StringBuilder();
+        final StringBuilder secondDescriptorAlignment = new StringBuilder();
+        final Map<Group, Integer> secondDescriptorAlignmentMap = computeAlignmentBasedOnFirstDescriptor(
+                descriptorsPair.getMoleculeType(), firstDescriptorResidues, firstDescriptorAlignedResidues,
+                secondDescriptorAlignedResidues, firstDescriptorAlignment, secondDescriptorAlignment);
+        if (insertNonAlignedResiduesOfSecondDescriptor) {
+            insertNonAlignedResiduesOfSecondDescriptor(descriptorsPair.getMoleculeType(),
+                    secondDescriptorResidues, secondDescriptorAlignedResidues, secondDescriptorAlignmentMap,
+                    firstDescriptorAlignment, secondDescriptorAlignment);
+        }
+        return new StringBuilder(firstDescriptorAlignment.toString()).append(NEW_LINE)
+                .append(secondDescriptorAlignment.toString()).toString();
+    }
+
+    private static final void insertNonAlignedResiduesOfSecondDescriptor(final MoleculeType moleculeType,
+            final List<Group> secondDescriptorResidues, final List<Group> secondDescriptorAlignedResidues,
+            final Map<Group, Integer> secondDescriptorAlignmentMap,
+            final StringBuilder firstDescriptorAlignment, final StringBuilder secondDescriptorAlignment) {
+        final int secondDescriptorResiduesCount = CollectionUtils.size(secondDescriptorResidues);
+        int nonAlignedResiduesBeginning = 0;
+        int nonAlignedResiduesEnd = 0;
+        for (int residueIndex = 0; residueIndex < secondDescriptorResiduesCount; residueIndex++) {
+            final Group residue = secondDescriptorResidues.get(residueIndex);
+            if (secondDescriptorAlignedResidues.contains(residue)) {
+                if (nonAlignedResiduesBeginning != nonAlignedResiduesEnd) {
+                    final int nonAlignedResiduesCount = nonAlignedResiduesEnd - nonAlignedResiduesBeginning;
+                    final int alignedResidueIndex = secondDescriptorAlignmentMap.get(residue);
+                    extendAlignmentWithNonAlignedResidues(moleculeType, secondDescriptorResidues,
+                            firstDescriptorAlignment, secondDescriptorAlignment, nonAlignedResiduesBeginning,
+                            nonAlignedResiduesEnd, alignedResidueIndex);
+                    updateSecondDescriptorAlignmentMap(secondDescriptorAlignmentMap, nonAlignedResiduesCount,
+                            alignedResidueIndex);
+                }
+                nonAlignedResiduesBeginning = nonAlignedResiduesEnd = residueIndex + 1;
+            } else {
+                nonAlignedResiduesEnd++;
+            }
+        }
+        if (nonAlignedResiduesBeginning != nonAlignedResiduesEnd) {
+            for (int nonAlignedResidueIndex = nonAlignedResiduesBeginning; nonAlignedResidueIndex < nonAlignedResiduesEnd; nonAlignedResidueIndex++) {
+                extendAlignmentBySingleResidue(moleculeType,
+                        secondDescriptorResidues.get(nonAlignedResidueIndex), firstDescriptorAlignment,
+                        secondDescriptorAlignment, -1);
+            }
+        }
+    }
+
+    private static final void extendAlignmentWithNonAlignedResidues(final MoleculeType moleculeType,
+            final List<Group> secondDescriptorResidues, final StringBuilder firstDescriptorAlignment,
+            final StringBuilder secondDescriptorAlignment, int nonAlignedResiduesBeginning,
+            int nonAlignedResiduesEnd, final int alignedResidueIndex) {
+        for (int nonAlignedResidueIndex = nonAlignedResiduesEnd - 1; nonAlignedResidueIndex >= nonAlignedResiduesBeginning; nonAlignedResidueIndex--) {
+            extendAlignmentBySingleResidue(moleculeType,
+                    secondDescriptorResidues.get(nonAlignedResidueIndex), firstDescriptorAlignment,
+                    secondDescriptorAlignment, alignedResidueIndex);
+        }
+    }
+
+    private static final void updateSecondDescriptorAlignmentMap(
+            final Map<Group, Integer> secondDescriptorAlignmentMap, final int nonAlignedResiduesCount,
+            final int alignedResidueIndex) {
+        for (Map.Entry<Group, Integer> entry : secondDescriptorAlignmentMap.entrySet()) {
+            if (entry.getValue() >= alignedResidueIndex) {
+                entry.setValue(entry.getValue() + nonAlignedResiduesCount);
+            }
+        }
+    }
+
+    private static final void extendAlignmentBySingleResidue(final MoleculeType moleculeType,
+            final Group nonAlignedResidue, final StringBuilder firstDescriptorAlignment,
+            final StringBuilder secondDescriptorAlignment, final int alignedResidueIndex) {
+        final Residue nonAlignedResidueEntry = ResiduesDictionary.getResidueEntry(
+                nonAlignedResidue.getPDBName(), moleculeType);
+        if (alignedResidueIndex >= 0) {
+            firstDescriptorAlignment.insert(alignedResidueIndex, '.');
+            secondDescriptorAlignment.insert(alignedResidueIndex,
+                    nonAlignedResidueEntry.getSingleLetterCode());
+        } else {
+            firstDescriptorAlignment.append('.');
+            secondDescriptorAlignment.append(nonAlignedResidueEntry.getSingleLetterCode());
+        }
+    }
+
+    private static final Map<Group, Integer> computeAlignmentBasedOnFirstDescriptor(
+            final MoleculeType moleculeType, final List<Group> firstDescriptorResidues,
+            final List<Group> firstDescriptorAlignedResidues,
+            final List<Group> secondDescriptorAlignedResidues, final StringBuilder firstDescriptorAlignment,
+            final StringBuilder secondDescriptorAlignment) {
+        final Map<Group, Integer> secondDescriptorAlignmentMap = Maps.newHashMap();
+        int alignmentIndex = 0;
+        for (Group firstDescriptorResidue : firstDescriptorResidues) {
+            final Residue firstDescriptorResidueEntry = ResiduesDictionary.getResidueEntry(
+                    firstDescriptorResidue.getPDBName(), moleculeType);
+            firstDescriptorAlignment.append(firstDescriptorResidueEntry.getSingleLetterCode());
+            if (firstDescriptorAlignedResidues.contains(firstDescriptorResidue)) {
+                final int firstDescriptorResidueIndex = firstDescriptorAlignedResidues
+                        .indexOf(firstDescriptorResidue);
+                final Group secondDescriptorResidue = secondDescriptorAlignedResidues
+                        .get(firstDescriptorResidueIndex);
+                final Residue secondDescriptorResidueEntry = ResiduesDictionary.getResidueEntry(
+                        secondDescriptorResidue.getPDBName(), moleculeType);
+                secondDescriptorAlignment.append(secondDescriptorResidueEntry.getSingleLetterCode());
+                secondDescriptorAlignmentMap.put(secondDescriptorResidue, alignmentIndex);
+            } else {
+                secondDescriptorAlignment.append('.');
+            }
+            alignmentIndex++;
+        }
+        return secondDescriptorAlignmentMap;
     }
 }

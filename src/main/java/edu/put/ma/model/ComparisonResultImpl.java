@@ -1,8 +1,10 @@
 package edu.put.ma.model;
 
+import org.apache.commons.lang3.StringUtils;
 import org.biojava.nbio.structure.SVDSuperimposer;
 
 import lombok.Getter;
+import lombok.Setter;
 import edu.put.ma.descs.SimilarDescriptorsVerifier;
 import edu.put.ma.utils.ResidueUtils;
 
@@ -21,12 +23,22 @@ public class ComparisonResultImpl implements ComparisonResult {
 
     private SVDSuperimposer superimposer;
 
+    @Setter
+    private String sequenceAlignment;
+
     ComparisonResultImpl(final SimilarDescriptorsVerifier similarDescriptorsVerifier,
             final double originElementsAlignmentRmsd, final SVDSuperimposer superimposer,
             final double alignedElementsRatio, final double alignedResiduesRatio) {
         this(originElementsAlignmentRmsd, alignedElementsRatio, alignedResiduesRatio,
                 originElementsAlignmentRmsd, superimposer);
         this.structurallySimilar = similarDescriptorsVerifier.areStructurallySimilar(this);
+    }
+
+    ComparisonResultImpl(final SimilarDescriptorsVerifier similarDescriptorsVerifier,
+            final double originElementsAlignmentRmsd, final SVDSuperimposer superimposer,
+            final String sequenceAlignment) {
+        this(similarDescriptorsVerifier, originElementsAlignmentRmsd, superimposer, 1.0, 1.0);
+        this.sequenceAlignment = sequenceAlignment;
     }
 
     ComparisonResultImpl(final SimilarDescriptorsVerifier similarDescriptorsVerifier,
@@ -37,7 +49,8 @@ public class ComparisonResultImpl implements ComparisonResult {
     ComparisonResultImpl(final ComparisonResultImpl comparisonResult) {
         this(comparisonResult.originElementsAlignmentRmsd, comparisonResult.alignedElementsRatio,
                 comparisonResult.alignedResiduesRatio, comparisonResult.alignmentGlobalRmsd,
-                comparisonResult.structurallySimilar, comparisonResult.superimposer);
+                comparisonResult.structurallySimilar, comparisonResult.superimposer,
+                comparisonResult.sequenceAlignment);
     }
 
     private ComparisonResultImpl(final double originElementsAlignmentRmsd, final double alignedElementsRatio,
@@ -52,13 +65,12 @@ public class ComparisonResultImpl implements ComparisonResult {
 
     private ComparisonResultImpl(final double originElementsAlignmentRmsd, final double alignedElementsRatio,
             final double alignedResiduesRatio, final double alignmentGlobalRmsd,
-            final boolean structurallySimilar, final SVDSuperimposer superimposer) {
-        this.originElementsAlignmentRmsd = originElementsAlignmentRmsd;
-        this.alignedElementsRatio = alignedElementsRatio;
-        this.alignedResiduesRatio = alignedResiduesRatio;
-        this.alignmentGlobalRmsd = alignmentGlobalRmsd;
+            final boolean structurallySimilar, final SVDSuperimposer superimposer,
+            final String sequenceAlignment) {
+        this(originElementsAlignmentRmsd, alignedElementsRatio, alignedResiduesRatio, alignmentGlobalRmsd,
+                superimposer);
         this.structurallySimilar = structurallySimilar;
-        this.superimposer = superimposer;
+        this.sequenceAlignment = sequenceAlignment;
     }
 
     @Override
@@ -74,18 +86,22 @@ public class ComparisonResultImpl implements ComparisonResult {
 
     @Override
     public String toString() {
-        return new StringBuilder((structurallySimilar) ? "are" : "are not")
+        final StringBuilder result = new StringBuilder((structurallySimilar) ? "are" : "are not")
                 .append(" structurally similar\n")
                 .append("RMSD of the central elements alignment: ")
                 .append(String.format("%.3f",
-                        ResidueUtils.ensureCommonDoubleFormat(originElementsAlignmentRmsd))).append("\n")
-                .append("Fraction of aligned elements: ")
+                        ResidueUtils.ensureCommonDoubleFormat(originElementsAlignmentRmsd)))
+                .append("\nFraction of aligned elements: ")
                 .append(String.format("%.2f", ResidueUtils.ensureCommonDoubleFormat(alignedElementsRatio)))
-                .append("\n").append("Fraction of aligned residues: ")
+                .append("\nFraction of aligned residues: ")
                 .append(String.format("%.2f", ResidueUtils.ensureCommonDoubleFormat(alignedResiduesRatio)))
-                .append("\n").append("RMSD of the total alignment: ")
-                .append(String.format("%.3f", ResidueUtils.ensureCommonDoubleFormat(alignmentGlobalRmsd)))
-                .toString();
+                .append("\nRMSD of the total alignment: ")
+                .append(String.format("%.3f", ResidueUtils.ensureCommonDoubleFormat(alignmentGlobalRmsd)));
+        if (StringUtils.isNotBlank(sequenceAlignment)) {
+            result.append("\nSequence alignment:\n").append(sequenceAlignment);
+        }
+        return result.toString();
+
     }
 
 }

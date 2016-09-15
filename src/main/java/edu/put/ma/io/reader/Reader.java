@@ -1,12 +1,8 @@
 package edu.put.ma.io.reader;
 
-import java.io.InputStream;
-
-import org.biojava.nbio.structure.Structure;
+import edu.put.ma.io.model.Structure3d;
 
 public interface Reader {
 
-    Structure read(String inputFilePath);
-    
-    Structure read(InputStream inStream);
+    Structure3d read(String inputFilePath);
 }

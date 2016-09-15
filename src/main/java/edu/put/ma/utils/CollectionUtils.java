@@ -2,12 +2,17 @@ package edu.put.ma.utils;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import java.util.Arrays;
+
+import org.biojava.nbio.structure.Group;
 
 public final class CollectionUtils {
 
@@ -83,12 +88,38 @@ public final class CollectionUtils {
 
     public static final <T> void extendFromSpecificPosition(final List<T> currentElements,
             final List<T> newElements, final int position) {
-        if ((!org.apache.commons.collections4.CollectionUtils.sizeIsEmpty(currentElements))
-                && (!org.apache.commons.collections4.CollectionUtils.sizeIsEmpty(newElements))) {
+        if (!org.apache.commons.collections4.CollectionUtils.sizeIsEmpty(newElements)) {
+            final int currentElementsSize = org.apache.commons.collections4.CollectionUtils
+                    .size(currentElements);
+            if (position < currentElementsSize) {
+                currentElements.addAll(position, newElements);
+            } else if (position == currentElementsSize) {
+                extend(currentElements, newElements);
+            } else {
+                PreconditionUtils.checkIfIndexInRange(position, 0,
+                        org.apache.commons.collections4.CollectionUtils.size(currentElements),
+                        "Specific position");
+            }
+        }
+    }
+
+    public static final <T> void setFromSpecificPosition(final List<T> currentElements,
+            final List<T> newElements, final int position) {
+        if (!org.apache.commons.collections4.CollectionUtils.sizeIsEmpty(newElements)) {
             PreconditionUtils.checkIfIndexInRange(position, 0,
                     org.apache.commons.collections4.CollectionUtils.size(currentElements),
                     "Specific position");
-            currentElements.addAll(position, newElements);
+            final int newElementsSize = org.apache.commons.collections4.CollectionUtils.size(newElements);
+            remove(currentElements, position, newElementsSize);
+            extendFromSpecificPosition(currentElements, newElements, position);
+        }
+    }
+
+    public static final <T> void remove(final List<T> currentElements, final int position, final int size) {
+        if (org.apache.commons.collections4.CollectionUtils.size(currentElements) >= position + size) {
+            for (int index = position + size - 1; index >= position; index--) {
+                currentElements.remove(index);
+            }
         }
     }
 
@@ -115,5 +146,54 @@ public final class CollectionUtils {
             return newElements;
         }
         return Collections.emptyList();
+    }
+
+    public static final <T> boolean equalStringRepresentationsOfLists(final List<T> firstElements,
+            final List<T> secondElements) {
+        if ((!org.apache.commons.collections4.CollectionUtils.sizeIsEmpty(firstElements))
+                && (!org.apache.commons.collections4.CollectionUtils.sizeIsEmpty(secondElements))) {
+            return Arrays.toString(firstElements.toArray()).equals(Arrays.toString(secondElements.toArray()));
+        }
+        return false;
+    }
+
+    public static final <T extends Comparable<T>> List<Integer> sortAndReturnOrdering(final List<T> elements) {
+        final List<Integer> ordering = Lists
+                .newArrayListWithCapacity(org.apache.commons.collections4.CollectionUtils.size(elements));
+        Collections.sort(elements, new Comparator<T>() {
+            public int compare(final T o1, final T o2) {
+                final int comparisonResult = o1.compareTo(o2);
+                ordering.add(comparisonResult);
+                return comparisonResult;
+            }
+        });
+        return ordering;
+    }
+
+    public static final <T extends Comparable<T>> void sort(final List<T> elements) {
+        Collections.sort(elements, new Comparator<T>() {
+            public int compare(final T o1, final T o2) {
+                return o1.compareTo(o2);
+            }
+        });
+    }
+
+    public static final void sortResidues(final List<Group> residues) {
+        Collections.sort(residues, new Comparator<Group>() {
+            public int compare(final Group o1, final Group o2) {
+                return o1.getResidueNumber().compareTo(o2.getResidueNumber());
+            }
+        });
+    }
+
+    public static final <T> void sortAccordingToOrdering(final List<T> elements, final List<Integer> ordering) {
+        Collections.sort(elements, new Comparator<T>() {
+            private int index;
+
+            @Override
+            public int compare(final T o1, final T o2) {
+                return ordering.get(index++);
+            }
+        });
     }
 }

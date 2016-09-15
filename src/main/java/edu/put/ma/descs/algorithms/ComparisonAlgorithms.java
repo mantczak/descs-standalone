@@ -3,7 +3,7 @@ package edu.put.ma.descs.algorithms;
 import static edu.put.ma.descs.algorithms.CommonAlgorithm.COMPREHENSIVE_SEARCH;
 import static edu.put.ma.model.input.DescriptorsComparatorInputModelImpl.DEFAULT_MAXIMAL_RMSD_BASED_COST_OF_PAIR_OF_ALIGNED_DUPLEXES;
 import static edu.put.ma.descs.algorithms.CommonAlgorithm.FIRST_ALIGNMENT_ONLY;
-
+import lombok.Getter;
 import edu.put.ma.descs.ComparisonPrecision;
 
 public enum ComparisonAlgorithms {
@@ -21,13 +21,10 @@ public enum ComparisonAlgorithms {
                     DEFAULT_MAXIMAL_RMSD_BASED_COST_OF_PAIR_OF_ALIGNED_DUPLEXES,
                     HungarianMethodDrivenSearch.AlgorithmType.THIRD));
 
-    private final ComparisonAlgorithm algorithm;
+    @Getter
+    private final ComparisonAlgorithm comparisonAlgorithm;
 
     ComparisonAlgorithms(final ComparisonAlgorithm algorithm) {
-        this.algorithm = algorithm;
-    }
-
-    public ComparisonAlgorithm getComparisonAlgorithm() {
-        return algorithm;
+        this.comparisonAlgorithm = algorithm;
     }
 }

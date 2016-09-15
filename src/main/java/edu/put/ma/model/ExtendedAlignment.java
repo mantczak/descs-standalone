@@ -10,10 +10,9 @@ public interface ExtendedAlignment {
             double alignedElementsRatio, double alignedResiduesRatio);
 
     void addAlignedDuplexesPair(AlignedDuplexesPair alignedDuplexesPair, Alignment extension,
-            int alignmentAtomsCount);
+            int alignmentAtomsCount, DescriptorsPair descriptorsPair);
 
-    void setAlignedDuplexPairs(List<AlignedDuplexesPair> alignedDuplexesPairs, Alignment extension,
-            int alignmentAtomsCount);
+    void setAlignedDuplexPairs(List<AlignedDuplexesPair> alignedDuplexesPairs);
 
     void removeLastAlignedDuplexesPair();
 
@@ -45,6 +44,12 @@ public interface ExtendedAlignment {
     ExtendedAlignment copy();
 
     boolean cover(ExtendedAlignment currentAlignment);
-    
+
     boolean isUpdated();
+
+    boolean cover(List<AlignedDuplexesPair> currentAlignment);
+
+    List<AlignedDuplexesPair> getAlignedDuplexesPairs();
+
+    boolean isOverlapped();
 }

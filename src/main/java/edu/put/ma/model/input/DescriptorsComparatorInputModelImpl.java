@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.put.ma.descs.AlignmentMode;
 import edu.put.ma.descs.SimilarDescriptorsVerifier;
 import edu.put.ma.descs.SimilarDescriptorsVerifierImpl;
+import edu.put.ma.descs.algorithms.AlignmentAcceptanceMode;
 import edu.put.ma.descs.algorithms.ComparisonAlgorithm;
 import edu.put.ma.descs.algorithms.ComparisonAlgorithms;
 import edu.put.ma.io.FormatType;
@@ -21,6 +22,8 @@ import static edu.put.ma.utils.PreconditionUtils.MAXIMAL_PERCENTAGE_VALUE;
 @Getter
 public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl implements
         DescriptorsComparatorInputModel {
+
+    private static final String DEFAULT_LITERAL = " [default=";
 
     public static final double DEFAULT_MAXIMAL_RMSD_BASED_COST_OF_PAIR_OF_ALIGNED_DUPLEXES = 2.33;
 
@@ -39,6 +42,8 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
     private double maximalRmsdThresholdPerDuplexPair;
 
     private AlignmentMode alignmentMode;
+
+    private AlignmentAcceptanceMode alignmentAcceptanceMode;
 
     private String outputDirPath;
 
@@ -59,6 +64,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
                 .build();
         this.maximalRmsdThresholdPerDuplexPair = descriptorsComparatorInputModelBuilder.maximalRmsdThresholdPerDuplexPair;
         this.alignmentMode = descriptorsComparatorInputModelBuilder.alignmentMode;
+        this.alignmentAcceptanceMode = descriptorsComparatorInputModelBuilder.alignmentAcceptanceMode;
         this.outputDirPath = descriptorsComparatorInputModelBuilder.outputDirPath;
         initOptionsMapping();
     }
@@ -71,16 +77,16 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
 
     @Override
     public Options constructSpecificOptions() {
-        final String formatTypePostfix = ArrayUtils.getEnumNamesString(FormatType.class) + " [default="
+        final String formatTypePostfix = ArrayUtils.getEnumNamesString(FormatType.class) + DEFAULT_LITERAL
                 + DEFAULT_FORMAT + "]";
         final Options options = new Options();
         options.addOption("mt", "molecule-type", true,
-                "provided molecule types: " + ArrayUtils.getEnumNamesString(MoleculeType.class));
-        options.addOption("fd", "file-path-of-first-descriptor", true, "file path of first descriptor");
-        options.addOption("sd", "file-path-of-second-descriptor", true, "file path of second descriptor");
+                "supported molecule types: " + ArrayUtils.getEnumNamesString(MoleculeType.class));
+        options.addOption("fd", "file-path-of-first-descriptor", true, "file path of the first descriptor");
+        options.addOption("sd", "file-path-of-second-descriptor", true, "file path of the second descriptor");
         options.addOption("aan", "file-path-of-atom-names-used-during-alignment-building", true,
-                "file path of atom names considered during alignment building");
-        options.addOption("cat", "comparison-algorithm-type", true, "provided comparison algorithm types: "
+                "file path of atom names considered during building the alignment");
+        options.addOption("cat", "comparison-algorithm-type", true, "type of the comparison algorithm: "
                 + ArrayUtils.getEnumNamesString(ComparisonAlgorithms.class));
         options.addOption("od", "output-directory", true, "output directory path");
         options.addOption("if", "input-format", true, "(optional) provided file formats: "
@@ -103,10 +109,17 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
                 "wa",
                 "with-alignment",
                 true,
-                "(optional) a result of the comparison can be complemented with 3D structures of aligned descriptors, provided modes: "
+                "(optional) a result of the comparison can be complemented with 3D structures of aligned descriptors, supported modes: "
                         + ArrayUtils.getEnumNamesString(AlignmentMode.class)
-                        + " [default="
+                        + DEFAULT_LITERAL
                         + AlignmentMode.IGNORE + "]");
+        options.addOption(
+                "aam",
+                "alignment-acceptance-mode",
+                true,
+                "(optional) alignment acceptance mode, supported modes: "
+                        + ArrayUtils.getEnumNamesString(AlignmentAcceptanceMode.class) + DEFAULT_LITERAL
+                        + AlignmentAcceptanceMode.ALIGNED_RESIDUES_AND_AVERAGE_RMSD_OF_ALIGNED_DUPLEXES + "]");
         return options;
     }
 
@@ -123,7 +136,8 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
                 .put("secondDescriptorFilePath", "-sd").put("alignmentAtomNamesFilePath", "-aan")
                 .put("comparisonAlgorithmType", "-cat")
                 .put("maximalRmsdThresholdPerDuplexPair", "-mrmsdtpdp").put("alignmentMode", "-wa")
-                .put("outputDirPath", "-od").put("maximalOriginElementsPairAlignmentRmsd", "-moeparmsd")
+                .put("alignmentAcceptanceMode", "-aam").put("outputDirPath", "-od")
+                .put("maximalOriginElementsPairAlignmentRmsd", "-moeparmsd")
                 .put("maximalDuplexesPairAlignmentRmsd", "-mdparmsd")
                 .put("minimalAlignedElementsPercentage", "-maep")
                 .put("minimalAlignedResiduesPercentage", "-marp")
@@ -140,6 +154,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
         setComparisonAlgorithmType();
         setSimilarDescriptorsVerifier();
         setAlignmentMode();
+        setAlignmentAcceptanceMode();
         setOutputDirPath();
         setMaximalRmsdThresholdPerDuplexPair();
         initInputModelString();
@@ -165,6 +180,8 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
         private double maximalRmsdThresholdPerDuplexPair;
 
         private AlignmentMode alignmentMode;
+
+        private AlignmentAcceptanceMode alignmentAcceptanceMode;
 
         private String outputDirPath;
 
@@ -243,6 +260,11 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
             return this;
         }
 
+        public Builder alignmentAcceptanceMode(final AlignmentAcceptanceMode alignmentAcceptanceMode) {
+            this.alignmentAcceptanceMode = alignmentAcceptanceMode;
+            return this;
+        }
+
         public Builder outputFormat(final FormatType outputFormat) {
             this.outputFormat = outputFormat;
             return this;
@@ -262,27 +284,22 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
         inputModelString = new StringBuilder(inputModelString)
                 .append("Molecule type: ")
                 .append(moleculeType)
-                .append("\n")
-                .append("First descriptor file path: ")
+                .append("\nFirst descriptor file path: ")
                 .append(firstDescriptorFilePath)
-                .append("\n")
-                .append("Second descriptor file path: ")
+                .append("\nSecond descriptor file path: ")
                 .append(secondDescriptorFilePath)
-                .append("\n")
-                .append("Alignment atom names file path: ")
+                .append("\nAlignment atom names file path: ")
                 .append(alignmentAtomNamesFilePath)
-                .append("\n")
-                .append("Comparison algorithm type: ")
+                .append("\nComparison algorithm type: ")
                 .append(comparisonAlgorithmType)
-                .append("\n")
-                .append("Features of structurally similar descriptors:\n")
+                .append("\nFeatures of structurally similar descriptors:\n")
                 .append(similarDescriptorsVerifier.toString())
-                .append("\n")
-                .append("Maximal RMSD-based cost of a pair of aligned duplexes: ")
+                .append("\nMaximal RMSD-based cost of a pair of aligned duplexes: ")
                 .append(String.format("%.2f",
                         ResidueUtils.ensureCommonDoubleFormat(maximalRmsdThresholdPerDuplexPair)))
-                .append("\n").append("Alignment mode: ").append(alignmentMode).append("\n")
-                .append("Output dir path: ").append(outputDirPath).toString();
+                .append("\nAlignment mode: ").append(alignmentMode).append("\nAlignment acceptance mode: ")
+                .append(alignmentAcceptanceMode).append("\nOutput dir path: ").append(outputDirPath)
+                .toString();
     }
 
     private void setMoleculeType() {
@@ -352,6 +369,11 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
 
     private void setAlignmentMode() {
         alignmentMode = getEnumValue("wa", AlignmentMode.class, DEFAULT_ALIGNMENT_MODE);
+    }
+
+    private void setAlignmentAcceptanceMode() {
+        alignmentAcceptanceMode = getEnumValue("aam", AlignmentAcceptanceMode.class,
+                DEFAULT_ALIGNMENT_ACCEPTANCE_MODE);
     }
 
     private void setOutputDirPath() {

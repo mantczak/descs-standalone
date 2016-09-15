@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>edu.put.ma</groupId>
 	<artifactId>descs-standalone</artifactId>
@@ -26,6 +27,11 @@
 	</developers>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.2</version>
+		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -101,6 +107,16 @@
 			<version>${aspectjrt.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.8</version>
+		</dependency>
+		<dependency>
+			<groupId>org.rauschig</groupId>
+			<artifactId>jarchivelib</artifactId>
+			<version>0.7.0</version>
+		</dependency>
+		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
@@ -151,10 +167,17 @@
 							</goals>
 							<configuration>
 								<target>
-									<taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties" classpathref="maven.plugin.classpath" />
-									<iajc destDir="${project.build.directory}/classes" inpath="${project.build.directory}/classes" source="${maven.compiler.source}" target="${maven.compiler.target}" classpathRef="maven.compile.classpath" Xlint="ignore">
+									<taskdef
+										resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"
+										classpathref="maven.plugin.classpath" />
+									<iajc destDir="${project.build.directory}/classes" inpath="${project.build.directory}/classes"
+										source="${maven.compiler.source}" target="${maven.compiler.target}"
+										classpathRef="maven.compile.classpath" Xlint="ignore">
 									</iajc>
-									<iajc destDir="${project.build.directory}/test-classes" inpath="${project.build.directory}/test-classes" source="${maven.compiler.source}" target="${maven.compiler.target}" classpathRef="maven.test.classpath" Xlint="ignore" />
+									<iajc destDir="${project.build.directory}/test-classes"
+										inpath="${project.build.directory}/test-classes" source="${maven.compiler.source}"
+										target="${maven.compiler.target}" classpathRef="maven.test.classpath"
+										Xlint="ignore" />
 								</target>
 							</configuration>
 						</execution>

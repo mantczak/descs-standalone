@@ -1,6 +1,7 @@
 package edu.put.ma.descs.contacts;
 
 import static edu.put.ma.gaps.GapsDistributionImpl.RESIDUE_OUTSIDE_GAP;
+import static edu.put.ma.utils.StringUtils.NEW_LINE;
 
 import java.util.List;
 import java.util.Map;
@@ -97,7 +98,7 @@ public class ContactsInspectorImpl implements ContactsInspector {
                 sb.append(String.valueOf((val) ? 1 : 0)).append("\t");
             }
             if (rowIndex < rowsCount - 1) {
-                sb.append("\n");
+                sb.append(NEW_LINE);
             }
             rowIndex++;
         }

@@ -2,6 +2,7 @@ package edu.put.ma.model;
 
 import static edu.put.ma.descs.DescriptorsBuilderImpl.DEFAULT_NEIBHOURHOOD_SZE;
 
+import java.util.Collections;
 import java.util.List;
 
 import lombok.Getter;
@@ -26,6 +27,10 @@ import edu.put.ma.utils.PreconditionUtils;
 import edu.put.ma.utils.ResidueUtils;
 
 public class DescriptorImpl implements Descriptor {
+
+    private static final boolean NOT_CONSIDER_ORIGIN_RESIDUE_INDEX = false;
+
+    private static final boolean CONSIDER_ORIGIN_RESIDUE_INDEX = true;
 
     @Getter
     private final int segmentsCount;
@@ -53,6 +58,10 @@ public class DescriptorImpl implements Descriptor {
 
     @Getter
     private Structure structure;
+
+    private String position;
+
+    private String sequence;
 
     public DescriptorImpl(final StructureExtension moleculeStructure, final int modelIndex,
             final ModelProperties modelProperties, final int originResidueIndex,
@@ -84,9 +93,24 @@ public class DescriptorImpl implements Descriptor {
 
     @Override
     public String toString() {
-        return new StringBuilder(String.valueOf(originResidueIndex + 1)).append("\t").append(id).append("\t")
-                .append(segmentsCount).append("\t").append(elementsCount).append("\t").append(residuesCount)
-                .toString();
+        return toString(CONSIDER_ORIGIN_RESIDUE_INDEX);
+    }
+
+    @Override
+    public String toStringWithoutOriginResidueIndex() {
+        return toString(NOT_CONSIDER_ORIGIN_RESIDUE_INDEX);
+    }
+
+    @Override
+    public List<Group> getResidues() {
+        final List<Group> residues = Lists.newArrayList();
+        final List<Chain> model = structure.getModel(0);
+        for (Chain chain : model) {
+            for (Group currentResidue : chain.getAtomGroups()) {
+                residues.add(currentResidue);
+            }
+        }
+        return Collections.unmodifiableList(residues);
     }
 
     @Override
@@ -127,6 +151,16 @@ public class DescriptorImpl implements Descriptor {
                     descriptor.getId()));
         }
         return descriptor;
+    }
+
+    private String toString(final boolean considerOriginResidueIndex) {
+        final StringBuilder result = new StringBuilder();
+        if (considerOriginResidueIndex) {
+            result.append(String.valueOf(originResidueIndex + 1)).append("\t");
+        }
+        result.append(id).append("\t").append(segmentsCount).append("\t").append(elementsCount).append("\t")
+                .append(residuesCount).append("\t").append(position).append("\t").append(sequence);
+        return result.toString();
     }
 
     private List<Integer> setUpDescriptorStructure(final StructureExtension descriptorStructure,
@@ -253,17 +287,53 @@ public class DescriptorImpl implements Descriptor {
         int result = 1;
         final List<Chain> model = structure.getModel(0);
         Group previousResidue = null;
+        final StringBuilder positionBuilder = new StringBuilder();
+        final StringBuilder segmentSequenceBuilder = new StringBuilder();
+        final StringBuilder sequenceBuilder = new StringBuilder();
         for (Chain chain : model) {
             for (Group currentResidue : chain.getAtomGroups()) {
                 if ((currentResidue != null)
                         && (previousResidue != null)
                         && (!ResidueUtils.areResiduesConnected(moleculeType, previousResidue, currentResidue))) {
                     result++;
+                    updatePosition(positionBuilder, currentResidue, previousResidue);
+                    extendSequence(sequenceBuilder, segmentSequenceBuilder);
+                    segmentSequenceBuilder.delete(0, segmentSequenceBuilder.length());
+                } else if (previousResidue == null) {
+                    updatePosition(positionBuilder, currentResidue, previousResidue);
                 }
+                final Residue residueEntry = ResiduesDictionary.getResidueEntry(currentResidue.getPDBName(),
+                        moleculeType);
+                segmentSequenceBuilder.append(residueEntry.getSingleLetterCode());
                 previousResidue = currentResidue;
             }
         }
+        updatePosition(positionBuilder, null, previousResidue);
+        position = positionBuilder.toString().replaceAll("_", "");
+        extendSequence(sequenceBuilder, segmentSequenceBuilder);
+        sequence = sequenceBuilder.toString();
         return result;
+    }
+
+    private static final void extendSequence(final StringBuilder sequenceBuilder,
+            final StringBuilder segmentSequenceBuilder) {
+        if (sequenceBuilder.length() > 0) {
+            sequenceBuilder.append(", ");
+        }
+        sequenceBuilder.append(segmentSequenceBuilder.toString());
+    }
+
+    private static final void updatePosition(final StringBuilder positionBuilder, final Group currentResidue,
+            final Group previousResidue) {
+        if (previousResidue != null) {
+            positionBuilder.append("-").append(previousResidue.getResidueNumber().printFull());
+            if (currentResidue != null) {
+                positionBuilder.append(", ");
+            }
+        }
+        if (currentResidue != null) {
+            positionBuilder.append(currentResidue.getResidueNumber().printFull());
+        }
     }
 
     private static final String getDescriptorId(final StructureExtension extendedStructure,
@@ -302,7 +372,7 @@ public class DescriptorImpl implements Descriptor {
         return CollectionUtils.size(coveredResidues);
     }
 
-    private static void insertResiduesOfNewElement(final List<Integer> coveredResidues,
+    private static final void insertResiduesOfNewElement(final List<Integer> coveredResidues,
             final int leftBoundaryIndex, final int rightBoundaryIndex) {
         for (int residueIndex = leftBoundaryIndex; residueIndex <= rightBoundaryIndex; residueIndex++) {
             if (!coveredResidues.contains(residueIndex)) {
@@ -311,8 +381,9 @@ public class DescriptorImpl implements Descriptor {
         }
     }
 
-    private static int getConnectedResiduesCount(final MoleculeType moleculeType, final List<Chain> model,
-            final ResiduesAccess residuesAccess, final int leftBoundaryIndex, final int rightBoundaryIndex) {
+    private static final int getConnectedResiduesCount(final MoleculeType moleculeType,
+            final List<Chain> model, final ResiduesAccess residuesAccess, final int leftBoundaryIndex,
+            final int rightBoundaryIndex) {
         int connectedResiduesCount = 0;
         for (int residueIndex = leftBoundaryIndex + 1; residueIndex <= rightBoundaryIndex; residueIndex++) {
             final Group previousResidue = residuesAccess.getResidueByIndex(residueIndex - 1, model);

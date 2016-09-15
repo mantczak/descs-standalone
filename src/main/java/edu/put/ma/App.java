@@ -11,12 +11,12 @@ import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.Transformer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.biojava.nbio.structure.Chain;
-import org.biojava.nbio.structure.Structure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +34,8 @@ import edu.put.ma.descs.UncomparableDescriptorsException;
 import edu.put.ma.descs.contacts.ContactsInspector;
 import edu.put.ma.descs.contacts.ContactsInspectorImpl;
 import edu.put.ma.descs.contacts.ExpressionValidatorImpl;
+import edu.put.ma.io.model.ModelInfo;
+import edu.put.ma.io.model.Structure3d;
 import edu.put.ma.io.reader.Reader;
 import edu.put.ma.io.reader.ReaderFactory;
 import edu.put.ma.io.writer.Writer;
@@ -119,14 +121,6 @@ public class App {
         return getPropertyValueByKey("artifactId");
     }
 
-    private static final Options getExecutionModeOption() {
-        final Options options = new Options();
-        options.addOption("em", "execution-mode", true,
-                "provided execution modes: " + ArrayUtils.getEnumNamesString(ExecutionMode.class)
-                        + " [default=" + App.DEFAULT_EXECUTION_MODE + "]");
-        return options;
-    }
-
     private ExecutionMode getExecutionMode(final String[] args) {
         final Options options = getExecutionModeOption();
         try {
@@ -158,17 +152,6 @@ public class App {
         return DEFAULT_EXECUTION_MODE;
     }
 
-    private static final String getExecutionModeCode(final String code) {
-        PreconditionUtils.checkIfStringIsBlank(code, "Execution code");
-        final String longPrefix = "--";
-        final String shortPrefix = "-";
-        String result = !StringUtils.startsWith(code, longPrefix) ? code : StringUtils.substring(code,
-                StringUtils.length(longPrefix));
-        result = !StringUtils.startsWith(result, shortPrefix) ? result : StringUtils.substring(result,
-                StringUtils.length(shortPrefix));
-        return result;
-    }
-
     private <T extends CommonInputModel> void convert(final T inputModel) {
         try {
             LOGGER.info("Start of formats conversion...");
@@ -176,17 +159,17 @@ public class App {
                     FormatConverterInputModel.class);
             final FormatConverterInputModel specificInputModel = (FormatConverterInputModel) inputModel;
             LOGGER.info(specificInputModel.getInputModelString());
-            if (specificInputModel.getInputFormat() != specificInputModel.getOutputFormat()) {
+            if (specificInputModel.isValid()) {
                 final Reader reader = ReaderFactory.construct(specificInputModel.getInputFormat());
-                final Structure structure = reader.read(specificInputModel.getInputFilePath());
+                final Structure3d structure3d = reader.read(specificInputModel.getInputFilePath());
                 Preconditions.checkNotNull(
-                        structure,
-                        String.format("%s descriptor should be initialized properly",
+                        structure3d.getRawStructure(),
+                        String.format("Input 3D Structure [%s] is invalid",
                                 FilenameUtils.getBaseName(specificInputModel.getInputFilePath())));
                 final Writer writer = WriterFactory.construct(specificInputModel.getOutputFormat());
-                writer.write(structure, specificInputModel.getOutputFilePath());
+                writer.write(structure3d, specificInputModel.getOutputFilePath());
             } else {
-                LOGGER.info("Input and output formats are the same - there is no need to perform the conversion");
+                LOGGER.info("Input and output formats are the same or input/output file extensions are inappropriate");
             }
         } catch (Exception e) {
             LOGGER.info(ERROR_OCCURED);
@@ -197,6 +180,7 @@ public class App {
     }
 
     private <T extends CommonInputModel> void buildDescriptors(final T inputModel) {
+        DescriptorsBuilder descriptorsBuilder = null;
         try {
             LOGGER.info("Start of descriptors building...");
             PreconditionUtils.checkIfInstanceOfInputModelIsAsExpectedOne(inputModel, inputModel.getClass(),
@@ -207,7 +191,7 @@ public class App {
                     specificInputModel.getInContactResiduesExpressionString(),
                     specificInputModel.getMoleculeType(), specificInputModel.getThreadsCount());
             if (contactsInspector.isValid()) {
-                final DescriptorsBuilder descriptorsBuilder = new DescriptorsBuilderImpl(contactsInspector,
+                descriptorsBuilder = new DescriptorsBuilderImpl(contactsInspector,
                         specificInputModel.getThreadsCount());
                 final Reader reader = ReaderFactory.construct(specificInputModel.getInputFormat());
                 final StructureExtension extendedStructure = getExtendedStructure(
@@ -227,9 +211,6 @@ public class App {
                     throw new IllegalArgumentException(String.format("Input 3D structure [%s] is invalid",
                             FilenameUtils.getBaseName(specificInputModel.getInputFilePath())));
                 }
-                if (descriptorsBuilder != null) {
-                    descriptorsBuilder.close();
-                }
             } else {
                 throw new IllegalArgumentException(
                         "Inproper format of expression used to identify in-contact residues that should be refined");
@@ -238,6 +219,9 @@ public class App {
             LOGGER.info(ERROR_OCCURED);
             LOGGER.error(e.getMessage(), e);
         } finally {
+            if (descriptorsBuilder != null) {
+                descriptorsBuilder.close();
+            }
             LOGGER.info("Descriptors building done");
         }
     }
@@ -253,14 +237,12 @@ public class App {
             if (modelProperties.isValid()) {
                 descriptorsBuilder.build(extendedStructure, (modelsCount > 1) ? modelIndex : -1,
                         modelProperties);
-                final String summary = descriptorsBuilder.saveDescriptors(outputDir,
-                        (modelsCount > 1) ? String.valueOf(modelIndex + 1) : "", writer,
+                final List<Integer> modelNos = getModelNosBasedOnModelInfos(extendedStructure.getModelInfos());
+                final String modelNo = (modelsCount > 1) ? CollectionUtils.sizeIsEmpty(modelNos) ? String
+                        .valueOf(modelIndex + 1) : String.valueOf(modelNos.get(modelIndex)) : "";
+                final String summary = descriptorsBuilder.saveDescriptors(outputDir, modelNo, writer,
                         specificInputModel.getDescriptorsFilter());
-                if (StringUtils.isNotBlank(summary)) {
-                    LOGGER.info(summary);
-                } else {
-                    LOGGER.info("There is no descriptors that meet defined requirements");
-                }
+                logSummary(modelsCount, modelNo, summary);
             }
         }
     }
@@ -321,10 +303,14 @@ public class App {
             DescriptorsPair descriptorsPair = new DescriptorsPairImpl(firstDescriptorExtendedStructure,
                     secondDescriptorExtendedStructure, specificInputModel.getAlignmentMode());
             PreconditionUtils.checkIfDescriptorsAreComparable(descriptorsPair);
+            LOGGER.info("Features of compared descriptors:");
+            LOGGER.info(descriptorsPair.getFirstDescriptorString());
+            LOGGER.info(descriptorsPair.getSecondDescriptorString());
             final DescriptorsComparator descriptorsComparator = new DescriptorsComparatorImpl(
                     specificInputModel.getComparisonAlgorithm(),
                     specificInputModel.getSimilarDescriptorsVerifier(),
-                    specificInputModel.getMaximalRmsdThresholdPerDuplexPair(), alignmentAtomNames);
+                    specificInputModel.getMaximalRmsdThresholdPerDuplexPair(), alignmentAtomNames,
+                    specificInputModel.getAlignmentAcceptanceMode());
             final ComparisonResult comparisonResult = descriptorsComparator.compare(descriptorsPair);
             if ((comparisonResult != null) && (comparisonResult.isStructurallySimilar())) {
                 LOGGER.info(String.format("Following descriptors %s %s",
@@ -364,7 +350,20 @@ public class App {
         }
     }
 
-    private ImmutableList<String> getAlignmentAtomNames(final String alignmentAtomNamesFilePath,
+    private static final void logSummary(final int modelsCount, final String modelNo, final String summary) {
+        if (StringUtils.isNotBlank(summary)) {
+            LOGGER.info(summary);
+        } else {
+            if (modelsCount <= 1) {
+                LOGGER.info("There is no descriptors that meet defined requirements");
+            } else {
+                LOGGER.info(String.format(
+                        "There is no descriptors that meet defined requirements for model %s", modelNo));
+            }
+        }
+    }
+
+    private static final ImmutableList<String> getAlignmentAtomNames(final String alignmentAtomNamesFilePath,
             final MoleculeType moleculeType) {
         final File alignmentAtomNamesFile = FileUtils.getFile(alignmentAtomNamesFilePath);
         PreconditionUtils.checkIfFileExistsAndIsNotADirectory(alignmentAtomNamesFile, "Alignment atom names");
@@ -376,6 +375,33 @@ public class App {
             LOGGER.error(e.getMessage(), e);
         }
         throw new IllegalArgumentException("Format of alignment atom names string is inproper");
+    }
+
+    private static final List<Integer> getModelNosBasedOnModelInfos(final List<ModelInfo> modelInfos) {
+        return (List<Integer>) CollectionUtils.collect(modelInfos, new Transformer<ModelInfo, Integer>() {
+            public Integer transform(final ModelInfo modelInfo) {
+                return modelInfo.getModelNo();
+            }
+        });
+    }
+
+    private static final Options getExecutionModeOption() {
+        final Options options = new Options();
+        options.addOption("em", "execution-mode", true,
+                "provided execution modes: " + ArrayUtils.getEnumNamesString(ExecutionMode.class)
+                        + " [default=" + App.DEFAULT_EXECUTION_MODE + "]");
+        return options;
+    }
+
+    private static final String getExecutionModeCode(final String code) {
+        PreconditionUtils.checkIfStringIsBlank(code, "Execution code");
+        final String longPrefix = "--";
+        final String shortPrefix = "-";
+        String result = !StringUtils.startsWith(code, longPrefix) ? code : StringUtils.substring(code,
+                StringUtils.length(longPrefix));
+        result = !StringUtils.startsWith(result, shortPrefix) ? result : StringUtils.substring(result,
+                StringUtils.length(shortPrefix));
+        return result;
     }
 
     private static final CommonInputModel constructInputModel(final ExecutionMode executionMode,
@@ -397,14 +423,16 @@ public class App {
 
     private static final StructureExtension getExtendedStructure(final String inputFilePath,
             final Reader reader, final MoleculeType moleculeType, final StructureType structureType) {
-        final Structure structure = reader.read(inputFilePath);
+        PreconditionUtils.checkIfInputFileIsArchive(FilenameUtils.getName(inputFilePath));
+        final Structure3d structure3d = reader.read(inputFilePath);
         final String inputFileBasename = FilenameUtils.getBaseName(inputFilePath);
-        Preconditions.checkNotNull(structure,
+        Preconditions.checkNotNull(structure3d.getRawStructure(),
                 String.format("%s structure should be initialized properly", inputFileBasename));
         if (structureType == StructureType.DESCRIPTOR) {
-            PreconditionUtils.checkIfDescriptorDoesNotContainMultipleModels(structure, inputFileBasename);
+            PreconditionUtils.checkIfDescriptorDoesNotContainMultipleModels(structure3d.getRawStructure(),
+                    inputFileBasename);
         }
-        return new StructureExtensionImpl(inputFileBasename, structure, moleculeType);
+        return new StructureExtensionImpl(inputFileBasename, structure3d, moleculeType, structureType);
     }
 
     private static final ImmutableList<String> constructAlignmentAtomNames(

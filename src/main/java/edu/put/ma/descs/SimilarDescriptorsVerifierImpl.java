@@ -81,14 +81,14 @@ public class SimilarDescriptorsVerifierImpl implements SimilarDescriptorsVerifie
     @Override
     public String toString() {
         return new StringBuilder().append("Maximal RMSD of the central elements alignment: ")
-                .append(String.format("%.2f", maximalOriginElementsPairAlignmentRmsd)).append("\n")
-                .append("Maximal RMSD of a pair of aligned duplexes: ")
-                .append(String.format("%.2f", maximalDuplexesPairAlignmentRmsd)).append("\n")
-                .append("Minimal fraction of aligned elements: ")
+                .append(String.format("%.2f", maximalOriginElementsPairAlignmentRmsd))
+                .append("\nMaximal RMSD of a pair of aligned duplexes: ")
+                .append(String.format("%.2f", maximalDuplexesPairAlignmentRmsd))
+                .append("\nMinimal fraction of aligned elements: ")
                 .append(String.format("%.2f", minimalAlignedElementsPercentage / MAXIMAL_PERCENTAGE_VALUE))
-                .append("\n").append("Minimal fraction of aligned residues: ")
+                .append("\nMinimal fraction of aligned residues: ")
                 .append(String.format("%.2f", minimalAlignedResiduesPercentage / MAXIMAL_PERCENTAGE_VALUE))
-                .append("\n").append("Maximal RMSD of the total alignment: ")
+                .append("\nMaximal RMSD of the total alignment: ")
                 .append(String.format("%.2f", maximalAlignmentGlobalRmsd)).toString();
     }
 

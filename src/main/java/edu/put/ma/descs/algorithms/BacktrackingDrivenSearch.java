@@ -19,7 +19,7 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
     private List<ExtendedAlignment> alignments;
 
     private ExtendedAlignment unacceptableAlignment;
-    
+
     private int initNotVisitedFirstDescriptorOtherElementsCount;
 
     public BacktrackingDrivenSearch(final boolean firstAlignmentOnly, final ComparisonPrecision precision) {
@@ -29,15 +29,17 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
 
     @Override
     void extendAlignment(final DescriptorsPair descriptorsPair, final ExtendedAlignment currentAlignment,
-            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs) {
+            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         this.alignments = edu.put.ma.utils.CollectionUtils.prepareList(this.alignments);
         this.initNotVisitedFirstDescriptorOtherElementsCount = CollectionUtils.size(allAlignedDuplexesPairs);
-        checkAndExtend(descriptorsPair, currentAlignment, allAlignedDuplexesPairs);
+        checkAndExtend(descriptorsPair, currentAlignment, allAlignedDuplexesPairs, alignmentAcceptanceMode);
     }
 
     private boolean checkAndExtend(final DescriptorsPair descriptorsPair,
             final ExtendedAlignment currentAlignment,
-            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs) {
+            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         final int notVisitedFirstDescriptorOtherElementsCount = CollectionUtils.size(allAlignedDuplexesPairs);
         if (notVisitedFirstDescriptorOtherElementsCount == initNotVisitedFirstDescriptorOtherElementsCount - 1) {
             unacceptableAlignment = null;
@@ -46,7 +48,7 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
             return true;
         } else if (notVisitedFirstDescriptorOtherElementsCount > 0) {
             return extendPartialAlignment(descriptorsPair, currentAlignment, allAlignedDuplexesPairs,
-                    notVisitedFirstDescriptorOtherElementsCount);
+                    notVisitedFirstDescriptorOtherElementsCount, alignmentAcceptanceMode);
         }
         return false;
     }
@@ -54,7 +56,8 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
     private boolean extendPartialAlignment(final DescriptorsPair descriptorsPair,
             final ExtendedAlignment currentAlignment,
             final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
-            final int notVisitedFirstDescriptorOtherElementsCount) {
+            final int notVisitedFirstDescriptorOtherElementsCount,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         if (verifyUnacceptabilityOfPossibleAlignment(currentAlignment, allAlignedDuplexesPairs)) {
             return false;
         }
@@ -63,12 +66,12 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
                 || (leadToIdentifiedAlignments(currentAlignment, allAlignedDuplexesPairs))) {
             return false;
         }
-        return extend(descriptorsPair, currentAlignment, allAlignedDuplexesPairs);
+        return extend(descriptorsPair, currentAlignment, allAlignedDuplexesPairs, alignmentAcceptanceMode);
     }
 
     private boolean verifyUnacceptabilityOfPossibleAlignment(final ExtendedAlignment currentAlignment,
             final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs) {
-        if (unacceptableAlignment != null) {
+        if ((unacceptableAlignment != null) && (CollectionUtils.size(allAlignedDuplexesPairs) == 1)) {
             if (cover(currentAlignment, unacceptableAlignment, allAlignedDuplexesPairs)) {
                 return true;
             } else {
@@ -103,13 +106,15 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
     }
 
     private boolean extend(final DescriptorsPair descriptorsPair, final ExtendedAlignment currentAlignment,
-            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs) {
+            final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         for (Map.Entry<Integer, List<AlignedDuplexesPair>> promisingFirstDescriptorOtherElement : allAlignedDuplexesPairs
                 .entrySet()) {
             final List<AlignedDuplexesPair> alignedDuplexPairsOfFirstDescriptorOtherElement = allAlignedDuplexesPairs
                     .get(promisingFirstDescriptorOtherElement.getKey());
             if (analyseAlignedDuplexPairsOfFirstDescriptorOtherElement(descriptorsPair, currentAlignment,
-                    allAlignedDuplexesPairs, alignedDuplexPairsOfFirstDescriptorOtherElement)) {
+                    allAlignedDuplexesPairs, alignedDuplexPairsOfFirstDescriptorOtherElement,
+                    alignmentAcceptanceMode)) {
                 return true;
             }
         }
@@ -119,18 +124,20 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
     private boolean analyseAlignedDuplexPairsOfFirstDescriptorOtherElement(
             final DescriptorsPair descriptorsPair, final ExtendedAlignment currentAlignment,
             final Map<Integer, List<AlignedDuplexesPair>> allAlignedDuplexesPairs,
-            final List<AlignedDuplexesPair> alignedDuplexPairsOfFirstDescriptorOtherElement) {
+            final List<AlignedDuplexesPair> alignedDuplexPairsOfFirstDescriptorOtherElement,
+            final AlignmentAcceptanceMode alignmentAcceptanceMode) {
         for (AlignedDuplexesPair alignedDuplexesPair : alignedDuplexPairsOfFirstDescriptorOtherElement) {
             final Alignment extension = descriptorsComparator.constructExtension(descriptorsPair,
                     currentAlignment.getCurrentAlignment(), alignedDuplexesPair, precision);
-            if (extension != null) {
+            if (extension.getAlignedResiduesCount() > 0) {
                 currentAlignment.addAlignedDuplexesPair(alignedDuplexesPair, extension,
-                        descriptorsComparator.getAlignmentAtomsCount());
+                        descriptorsComparator.getAlignmentAtomsCount(), descriptorsPair);
                 updateLongestAlignment(descriptorsPair, currentAlignment, precision,
-                        CREATE_NEW_INSTANCE_OF_CURRENT_ALIGNMENT);
+                        CREATE_NEW_INSTANCE_OF_CURRENT_ALIGNMENT, alignmentAcceptanceMode);
                 final Map<Integer, List<AlignedDuplexesPair>> updatedAllAlignedDuplexesPairs = updateAndReturnNewInstanceOfAlignedDuplexesPairsContainer(
                         alignedDuplexesPair, allAlignedDuplexesPairs);
-                if (checkAndExtend(descriptorsPair, currentAlignment, updatedAllAlignedDuplexesPairs)) {
+                if (checkAndExtend(descriptorsPair, currentAlignment, updatedAllAlignedDuplexesPairs,
+                        alignmentAcceptanceMode)) {
                     return true;
                 } else {
                     currentAlignment.removeLastAlignedDuplexesPair();
@@ -146,7 +153,8 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
         final int identifiedAlignmentsCount = CollectionUtils.size(alignments);
         for (int alignmentIndex = 0; alignmentIndex < identifiedAlignmentsCount; alignmentIndex++) {
             final ExtendedAlignment identifiedAlignment = alignments.get(alignmentIndex);
-            result = cover(currentAlignment, identifiedAlignment, allAlignedDuplexesPairs);
+            result = !identifiedAlignment.isOverlapped()
+                    && cover(currentAlignment, identifiedAlignment, allAlignedDuplexesPairs);
             if (result) {
                 break;
             }
@@ -205,11 +213,8 @@ public class BacktrackingDrivenSearch extends CommonAlgorithm {
             final ExtendedAlignment identifiedAlignment) {
         for (Map.Entry<Integer, List<AlignedDuplexesPair>> firstDescriptorOtherElementAlignedDuplexPairs : availableToAlignDuplexPairs
                 .entrySet()) {
-            for (AlignedDuplexesPair alignedDuplexesPair : firstDescriptorOtherElementAlignedDuplexPairs
-                    .getValue()) {
-                if (!identifiedAlignment.contains(alignedDuplexesPair)) {
-                    return false;
-                }
+            if (!identifiedAlignment.cover(firstDescriptorOtherElementAlignedDuplexPairs.getValue())) {
+                return false;
             }
         }
         return true;
