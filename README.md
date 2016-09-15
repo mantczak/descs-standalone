@@ -5,12 +5,24 @@
 DESCS-STANDALONE is a tool allowing user to identify and structurally compare local, contact-based structural motifs, called [*descriptors*] [desc]. The descriptors can be built on unmodified residues from biological molecules such as proteins and RNAs. Both PDB and CIF formats are supported to store 3D structures of the considered molecules. At the beginning of the processing, a comprehensive validation of the input tertiary structures is performed. As a result, all identified inconsistencies are filtered out and stored in a log file. Features of the tool include:
 
 1. Identification of descriptors observed in the structural neighborhood of every residue of the input 3D structure of a molecule.
+<<<<<<< HEAD
+  - a flexible definition of an expression used for identification of close residues in the structural proximity of a descriptor's center. The tool supports basic operators: logical (i.e. OR, AND, NOT), relational (i.e. <, <=, =, >=, >) and arithmetic ones. A user can introduce the DISTANCE operator between any atoms, except hydrogens, that are found in the 3D structure of the input molecule (e.g. DISTANCE:C1';O5', DISTANCE:CA). Moreover, several virtual atoms can be also applied, i.e. in proteins: geometric centers of a backbone [BBGC] and a side chain [SCGC], CB extended point [CBX], and virtual CB atom provided by biojava [VCB], while in RNAs: geometric centers of a backbone [BBGC], a ribose [RBGC] and a base [BSGC]. 
+=======
   - a flexible definition of an expression used for identification of close residues in the structural proximity of a descriptor's center. The tool supports basic operators: logical (i.e., OR, AND, NOT), relational (i.e., <, <=, =, >=, >) and arithmetic ones. A user can introduce the DISTANCE operator between any atoms, except hydrogens, that are found in the 3D structure of the input molecule (e.g., DISTANCE:C1';O5', DISTANCE:CA). Moreover, several virtual atoms can be also applied, i.e., in proteins: geometric centers of a backbone [BBGC] and a side chain [SCGC], CB extended point [CBX], and virtual CB atom provided by biojava [VCB], while in RNAs: geometric centers of a backbone [BBGC], a ribose [RBGC] and a base [BSGC]. 
+>>>>>>> refs/heads/release-1.1
   - the size of the descriptor element can be configured by the user.
   - the output descriptors set can be constrained by the user through thresholds associated with the number of segments, elements and residues.
   - a concurrent processing is supported to increase processing efficiency, the number of threads can be configured by the user.
 
 2. A structural comparison of a descriptors pair performed with the use of several computationally efficient algorithms.
+<<<<<<< HEAD
+  - a backtracking-driven exact algorithms (i.e. BACKTRACKING_DRIVEN_FIRST_ALIGNMENT_ONLY, BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT).
+  - hungarian method-driven heuristic algorithms (i.e. HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED, HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED, HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED).
+  - thresholds (i.e. a maximal RMSD of the central elements alignment, a maximal RMSD of a pair of aligned duplexes, a minimal fraction of aligned elements, a minimal fraction of aligned residues, a maximal RMSD of the total alignment) driving a multi-criteria function of the structural similarity of descriptors can be flexibly configured by the user.
+  - a result of the comparison can be complemented with 3D structures of the aligned descriptors.
+
+3. A format conversion of tertiary structures of considered biological molecules from PDB to CIF and vice versa.
+=======
   - a backtracking-driven exact algorithms (i.e., BACKTRACKING_DRIVEN_FIRST_ALIGNMENT_ONLY, BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT).
   - the Hungarian method-driven heuristic algorithms (i.e., HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED, HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED, HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED).
   - thresholds (i.e., a maximal RMSD of the central elements alignment, a maximal RMSD of a pair of aligned duplexes, a minimal fraction of aligned elements, a minimal fraction of aligned residues, a maximal RMSD of the total alignment) driving a multi-criteria function of the structural similarity of descriptors can be flexibly configured by the user.
@@ -19,6 +31,7 @@ DESCS-STANDALONE is a tool allowing user to identify and structurally compare lo
 
 3. A format conversion of tertiary structures of considered biological molecules from PDB to CIF and vice versa. 
   - support for generation of EBI-inspired, compatible PDB file bundles (tar.gz) in case of conversion of 3D structures of large biomolecules that are only stored in format CIF.
+>>>>>>> refs/heads/release-1.1
 
 An example expression for identification of close residues in the structural proximity of a descriptor's center is presented below:
 ```sh
