@@ -66,7 +66,7 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
     private FormatType outputFormat;
 
     protected CommonInputModelImpl(final String[] args) {
-        this.options = constructCommonOptions(isOptionalFormatOptions());
+        this.options = constructCommonOptions(areOptionalFormatOptions());
         extendOptions(options, constructSpecificOptions());
         this.commandLine = CommandLineUtils.parseArgs(args, options);
     }
@@ -107,7 +107,7 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
     }
 
     @Override
-    public boolean isOptionalFormatOptions() {
+    public boolean areOptionalFormatOptions() {
         return false;
     }
 

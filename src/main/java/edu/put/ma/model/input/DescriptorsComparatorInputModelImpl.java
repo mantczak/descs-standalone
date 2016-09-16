@@ -123,7 +123,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
     }
 
     @Override
-    public boolean isOptionalFormatOptions() {
+    public boolean areOptionalFormatOptions() {
         return true;
     }
 

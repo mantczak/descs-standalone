@@ -15,10 +15,10 @@ public interface CommonInputModel {
     Options constructSpecificOptions();
 
     void printHelp(String artifactId);
-    
+
     String getInputModelString();
-    
+
     String[] getArgs();
-    
-    boolean isOptionalFormatOptions();
+
+    boolean areOptionalFormatOptions();
 }

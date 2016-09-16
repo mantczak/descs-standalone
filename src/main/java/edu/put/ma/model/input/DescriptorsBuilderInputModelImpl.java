@@ -118,7 +118,7 @@ public class DescriptorsBuilderInputModelImpl extends CommonInputModelImpl imple
     }
 
     @Override
-    public boolean isOptionalFormatOptions() {
+    public boolean areOptionalFormatOptions() {
         return true;
     }
 
