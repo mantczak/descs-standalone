@@ -3,7 +3,7 @@
 	<groupId>edu.put.ma</groupId>
 	<artifactId>descs-standalone</artifactId>
 	<packaging>jar</packaging>
-	<version>1.2-SNAPSHOT</version>
+	<version>1.1</version>
 	<name>descs-standalone</name>
 
 	<properties>
