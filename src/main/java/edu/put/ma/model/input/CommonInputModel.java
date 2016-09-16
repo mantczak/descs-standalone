@@ -19,4 +19,6 @@ public interface CommonInputModel {
     String getInputModelString();
     
     String[] getArgs();
+    
+    boolean isOptionalFormatOptions();
 }

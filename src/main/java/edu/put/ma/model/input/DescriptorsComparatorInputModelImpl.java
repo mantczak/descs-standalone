@@ -77,8 +77,6 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
 
     @Override
     public Options constructSpecificOptions() {
-        final String formatTypePostfix = ArrayUtils.getEnumNamesString(FormatType.class) + DEFAULT_LITERAL
-                + DEFAULT_FORMAT + "]";
         final Options options = new Options();
         options.addOption("mt", "molecule-type", true,
                 "supported molecule types: " + ArrayUtils.getEnumNamesString(MoleculeType.class));
@@ -89,10 +87,6 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
         options.addOption("cat", "comparison-algorithm-type", true, "type of the comparison algorithm: "
                 + ArrayUtils.getEnumNamesString(ComparisonAlgorithms.class));
         options.addOption("od", "output-directory", true, "output directory path");
-        options.addOption("if", "input-format", true, "(optional) provided file formats: "
-                + formatTypePostfix);
-        options.addOption("of", "output-format", true, "(optional) provided file formats: "
-                + formatTypePostfix);
         options.addOption("moeparmsd", "maximal-rmsd-of-central-elements-alignment", true,
                 "(optional) maximal RMSD of the central elements alignment [default=1.2A]");
         options.addOption("mdparmsd", "maximal-rmsd-of-pair-of-aligned-duplexes", true,
@@ -126,6 +120,11 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
     @Override
     public ComparisonAlgorithm getComparisonAlgorithm() {
         return comparisonAlgorithmType.getComparisonAlgorithm();
+    }
+
+    @Override
+    public boolean isOptionalFormatOptions() {
+        return true;
     }
 
     @Override

@@ -73,7 +73,6 @@ public class DescriptorsBuilderInputModelImpl extends CommonInputModelImpl imple
 
     @Override
     public Options constructSpecificOptions() {
-        final String formatTypeNamesString = ArrayUtils.getEnumNamesString(FormatType.class);
         final Options options = new Options();
         options.addOption("i", "input-file", true, "input file path");
         options.addOption("mt", "molecule-type", true,
@@ -83,10 +82,6 @@ public class DescriptorsBuilderInputModelImpl extends CommonInputModelImpl imple
         options.addOption("od", "output-directory", true, "(optional) output directory path");
         options.addOption("es", "element-size", true,
                 "(optional) number of residues in a single element [default=" + DEFAULT_ELEMENT_SIZE + "]");
-        options.addOption("if", "input-format", true, "(optional) provided file formats:  "
-                + formatTypeNamesString + " [default=" + DEFAULT_FORMAT + "]");
-        options.addOption("of", "output-format", true, "(optional) provided file formats: "
-                + formatTypeNamesString + " [default=" + DEFAULT_FORMAT + "]");
         options.addOption("tc", "threads-count", true,
                 "(optional) number of threads used during processing [default=" + AVAILABLE_PROCESSORS + "]");
         options.addOption(
@@ -120,6 +115,11 @@ public class DescriptorsBuilderInputModelImpl extends CommonInputModelImpl imple
                 true,
                 "(optional) a filter on descriptors that are characterized by higher value of residues count than the given bound [default=1000]");
         return options;
+    }
+
+    @Override
+    public boolean isOptionalFormatOptions() {
+        return true;
     }
 
     @Override

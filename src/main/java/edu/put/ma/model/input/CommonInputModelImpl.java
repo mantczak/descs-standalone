@@ -34,8 +34,6 @@ import edu.put.ma.utils.PreconditionUtils;
 
 public abstract class CommonInputModelImpl implements CommonInputModel {
 
-    public static final FormatType DEFAULT_FORMAT = FormatType.PDB;
-
     protected static final MoleculeType DEFAULT_MOLECULE = MoleculeType.PROTEIN;
 
     protected static final int AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
@@ -45,6 +43,8 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
     protected static final AlignmentAcceptanceMode DEFAULT_ALIGNMENT_ACCEPTANCE_MODE = AlignmentAcceptanceMode.ALIGNED_RESIDUES_AND_AVERAGE_RMSD_OF_ALIGNED_DUPLEXES;
 
     protected static final ComparisonAlgorithms DEFAULT_ALGORITHM_TYPE = ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT;
+
+    private static final FormatType DEFAULT_FORMAT = FormatType.PDB;
 
     private static final int COMMON_ARGUMENTS_COUNT = 2;
 
@@ -66,7 +66,7 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
     private FormatType outputFormat;
 
     protected CommonInputModelImpl(final String[] args) {
-        this.options = constructCommonOptions();
+        this.options = constructCommonOptions(isOptionalFormatOptions());
         extendOptions(options, constructSpecificOptions());
         this.commandLine = CommandLineUtils.parseArgs(args, options);
     }
@@ -104,6 +104,11 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
         }
         resultSize = CollectionUtils.size(result);
         return result.toArray(new String[resultSize]);
+    }
+
+    @Override
+    public boolean isOptionalFormatOptions() {
+        return false;
     }
 
     public static final <T extends Enum<T>> T getEnumValue(final CommandLine commandLine,
@@ -262,11 +267,16 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
         return null;
     }
 
-    private static final Options constructCommonOptions() {
+    private static final Options constructCommonOptions(final boolean optionalFormatOptions) {
         final String formatTypeNamesString = ArrayUtils.getEnumNamesString(FormatType.class);
+        final StringBuilder formatsDescriptionStringBuilder = (optionalFormatOptions) ? new StringBuilder(
+                "(optional) ") : new StringBuilder();
+        formatsDescriptionStringBuilder.append("supported file formats: ").append(formatTypeNamesString)
+                .append(" [default=" + DEFAULT_FORMAT + "]");
+        final String formatsDescriptionString = formatsDescriptionStringBuilder.toString();
         final Options options = new Options();
-        options.addOption("if", "input-format", true, "supported file formats: " + formatTypeNamesString);
-        options.addOption("of", "output-format", true, "supported file formats: " + formatTypeNamesString);
+        options.addOption("if", "input-format", true, formatsDescriptionString);
+        options.addOption("of", "output-format", true, formatsDescriptionString);
         return options;
     }
 
