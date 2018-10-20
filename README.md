@@ -1,8 +1,8 @@
 # A tool for identification and structural comparison of descriptors
 
-### Project home page is available [here] [doc].  
+### Project home page is available [here][doc].  
 
-DESCS-STANDALONE is a tool allowing user to identify and structurally compare local, contact-based structural motifs, called [*descriptors*] [desc]. The descriptors can be built on unmodified residues from biological molecules such as proteins and RNAs. Both PDB and CIF formats are supported to store 3D structures of the considered molecules. At the beginning of the processing, a comprehensive validation of the input tertiary structures is performed. As a result, all identified inconsistencies are filtered out and stored in a log file. Features of the tool include:
+DESCS-STANDALONE is a tool allowing user to identify and structurally compare local, contact-based structural motifs, called [*descriptors*][desc]. The descriptors can be built on unmodified residues from biological molecules such as proteins and RNAs. Both PDB and CIF formats are supported to store 3D structures of the considered molecules. At the beginning of the processing, a comprehensive validation of the input tertiary structures is performed. As a result, all identified inconsistencies are filtered out and stored in a log file. Features of the tool include:
 
 1. Identification of descriptors observed in the structural neighborhood of every residue of the input 3D structure of a molecule.
   - A flexible definition of an expression used for identification of close residues in the structural proximity of a descriptor's center. The tool supports basic operators: logical (i.e., OR, AND, NOT), relational (i.e., <, <=, =, >=, >) and arithmetic ones. A user can introduce the DISTANCE operator between any atoms, except hydrogens, that are found in the 3D structure of the input molecule (e.g., DISTANCE:C1';O5', DISTANCE:CA). Moreover, several virtual atoms can be also applied, i.e., in proteins: geometric centers of a backbone [BBGC] and a side chain [SCGC], CB extended point [CBX], and virtual CB atom provided by biojava [VCB], while in RNAs: geometric centers of a backbone [BBGC], a ribose [RBGC] and a base [BSGC]. 
@@ -42,9 +42,9 @@ DESCS-STANDALONE is the open source project available in the [public repository]
 
 To build the DESCS-STANDALONE package one must have installed: 
 
-- stable release of [Oracle JDK 6] [jdk] or above (however, Oracle JDK 7 is recommended), 
-- stable release of [Apache Maven 3.0.3] [mvn] or above, 
-- stable release of [Git] [git]. 
+- stable release of [Oracle JDK 6][jdk] or above (however, Oracle JDK 7 is recommended), 
+- stable release of [Apache Maven 3.0.3][mvn] or above, 
+- stable release of [Git][git]. 
 
 A used version of Java can be configured by setting the JAVA_HOME environment variable.
 
@@ -118,7 +118,7 @@ The research was supported by the National Science Centre, Poland [grant No. 201
 
 License
 ----
-Copyright (c) 2016 PUT Bioinformatics Group, licensed under [MIT license] [mit].
+Copyright (c) 2016 PUT Bioinformatics Group, licensed under [MIT license][mit].
 
    [desc]: http://onlinelibrary.wiley.com/doi/10.1002/prot.22296/pdf
    [doc]: http://www.cs.put.poznan.pl/mantczak/index.php?slab=descs-standalone
