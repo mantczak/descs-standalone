@@ -35,14 +35,14 @@
 	</developers>
 
 	<properties>
-		<maven.compiler.source>1.6</maven.compiler.source>
-		<maven.compiler.target>1.6</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.main.class>edu.put.ma.App</project.main.class>
 		<slf4j.version>1.7.12</slf4j.version>
-		<log4j.version>2.25.3</log4j.version>
+		<log4j.version>2.17.1</log4j.version>
 		<sonar.host.url>http://localhost:9000</sonar.host.url>
-		<sonar.java.source>1.6</sonar.java.source>
+		<sonar.java.source>1.8</sonar.java.source>
 	</properties>
 
 	<dependencies>
@@ -107,7 +107,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.16.6</version>
+			<version>1.18.22</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -152,6 +152,19 @@
 			<version>1.4</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
+		</dependency>
+
+		<!-- JAXB Runtime -->
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+			<version>2.3.9</version>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -169,7 +182,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-antrun-plugin</artifactId>
-					<version>1.7</version>
+					<version>1.8</version>
 					<dependencies>
 						<dependency>
 							<groupId>org.aspectj</groupId>
@@ -263,19 +276,13 @@
 
 	<profiles>
 		<profile>
-			<id>java-6-7</id>
+			<id>java-8</id>
 			<properties>
-				<aspectjrt.version>1.6.12</aspectjrt.version>
+				<aspectjrt.version>1.9.19</aspectjrt.version>
 			</properties>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
-		</profile>
-		<profile>
-			<id>java-8</id>
-			<properties>
-				<aspectjrt.version>1.8.8</aspectjrt.version>
-			</properties>
 			<dependencies>
 				<dependency>
 					<groupId>xerces</groupId>

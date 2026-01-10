@@ -1,5 +1,5 @@
 ### LOG ###
-descs-standalone.log
+descs-standalone*.log
 
 ### Java ###
 *.class
