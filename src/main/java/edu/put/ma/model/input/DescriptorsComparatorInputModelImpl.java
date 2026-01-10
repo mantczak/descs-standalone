@@ -11,7 +11,8 @@ import edu.put.ma.descs.SimilarDescriptorsVerifier;
 import edu.put.ma.descs.SimilarDescriptorsVerifierImpl;
 import edu.put.ma.descs.algorithms.AlignmentAcceptanceMode;
 import edu.put.ma.descs.algorithms.ComparisonAlgorithm;
-import edu.put.ma.descs.algorithms.ComparisonAlgorithms;
+import edu.put.ma.descs.algorithms.ComparisonAlgorithmFactory;
+import edu.put.ma.descs.algorithms.ComparisonAlgorithmType;
 import edu.put.ma.io.FormatType;
 import edu.put.ma.model.MoleculeType;
 import edu.put.ma.utils.ArrayUtils;
@@ -35,7 +36,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
 
     private String alignmentAtomNamesFilePath;
 
-    private ComparisonAlgorithms comparisonAlgorithmType;
+    private ComparisonAlgorithmType comparisonAlgorithmType;
 
     private SimilarDescriptorsVerifier similarDescriptorsVerifier;
 
@@ -85,7 +86,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
         options.addOption("aan", "file-path-of-atom-names-used-during-alignment-building", true,
                 "file path of atom names considered during building the alignment");
         options.addOption("cat", "comparison-algorithm-type", true, "type of the comparison algorithm: "
-                + ArrayUtils.getEnumNamesString(ComparisonAlgorithms.class));
+                + ArrayUtils.getEnumNamesString(ComparisonAlgorithmType.class));
         options.addOption("od", "output-directory", true, "output directory path");
         options.addOption("moeparmsd", "maximal-rmsd-of-central-elements-alignment", true,
                 "(optional) maximal RMSD of the central elements alignment [default=1.2A]");
@@ -119,7 +120,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
 
     @Override
     public ComparisonAlgorithm getComparisonAlgorithm() {
-        return comparisonAlgorithmType.getComparisonAlgorithm();
+        return ComparisonAlgorithmFactory.getComparisonAlgorithm(comparisonAlgorithmType);
     }
 
     @Override
@@ -172,7 +173,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
         @Getter
         private String alignmentAtomNamesFilePath;
 
-        private ComparisonAlgorithms comparisonAlgorithmType;
+        private ComparisonAlgorithmType comparisonAlgorithmType;
 
         private SimilarDescriptorsVerifierImpl.Builder similarDescriptorsVerifierBuilder;
 
@@ -213,7 +214,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
             return this;
         }
 
-        public Builder comparisonAlgorithmType(final ComparisonAlgorithms comparisonAlgorithmType) {
+        public Builder comparisonAlgorithmType(final ComparisonAlgorithmType comparisonAlgorithmType) {
             this.comparisonAlgorithmType = comparisonAlgorithmType;
             return this;
         }
@@ -318,7 +319,7 @@ public class DescriptorsComparatorInputModelImpl extends CommonInputModelImpl im
     }
 
     private void setComparisonAlgorithmType() {
-        comparisonAlgorithmType = getEnumValue("cat", ComparisonAlgorithms.class, DEFAULT_ALGORITHM_TYPE);
+        comparisonAlgorithmType = getEnumValue("cat", ComparisonAlgorithmType.class, DEFAULT_ALGORITHM_TYPE);
     }
 
     private void setMaximalRmsdThresholdPerDuplexPair() {

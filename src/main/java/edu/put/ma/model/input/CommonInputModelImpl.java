@@ -25,7 +25,7 @@ import edu.put.ma.descs.AlignmentMode;
 import edu.put.ma.descs.DescriptorsFilterImpl;
 import edu.put.ma.descs.SimilarDescriptorsVerifierImpl;
 import edu.put.ma.descs.algorithms.AlignmentAcceptanceMode;
-import edu.put.ma.descs.algorithms.ComparisonAlgorithms;
+import edu.put.ma.descs.algorithms.ComparisonAlgorithmType;
 import edu.put.ma.io.FormatType;
 import edu.put.ma.model.MoleculeType;
 import edu.put.ma.utils.ArrayUtils;
@@ -42,7 +42,7 @@ public abstract class CommonInputModelImpl implements CommonInputModel {
 
     protected static final AlignmentAcceptanceMode DEFAULT_ALIGNMENT_ACCEPTANCE_MODE = AlignmentAcceptanceMode.ALIGNED_RESIDUES_AND_AVERAGE_RMSD_OF_ALIGNED_DUPLEXES;
 
-    protected static final ComparisonAlgorithms DEFAULT_ALGORITHM_TYPE = ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT;
+    protected static final ComparisonAlgorithmType DEFAULT_ALGORITHM_TYPE = ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT;
 
     private static final FormatType DEFAULT_FORMAT = FormatType.PDB;
 

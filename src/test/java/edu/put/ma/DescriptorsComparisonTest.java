@@ -11,7 +11,7 @@ import org.junit.Test;
 import edu.put.ma.descs.AlignmentMode;
 import edu.put.ma.descs.UncomparableDescriptorsException;
 import edu.put.ma.descs.algorithms.AlignmentAcceptanceMode;
-import edu.put.ma.descs.algorithms.ComparisonAlgorithms;
+import edu.put.ma.descs.algorithms.ComparisonAlgorithmType;
 import edu.put.ma.io.FormatType;
 import edu.put.ma.io.writer.CommonWriter;
 import edu.put.ma.model.MoleculeType;
@@ -26,7 +26,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER);
@@ -39,7 +39,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER);
@@ -52,7 +52,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_FIRST_ALIGNMENT_ONLY)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_FIRST_ALIGNMENT_ONLY)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER);
@@ -66,7 +66,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1u78a2_A_69_VAL.pdb")
                 .secondDescriptorFilePath("d2iw5b1_B_391_ALA.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(1.75);
@@ -80,7 +80,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(2.0);
@@ -94,7 +94,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_FIRST_ALIGNMENT_ONLY_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(2.33);
@@ -108,7 +108,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1u78a2_A_69_VAL.pdb")
                 .secondDescriptorFilePath("d2iw5b1_B_391_ALA.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(1.75);
@@ -122,7 +122,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(2.0);
@@ -136,7 +136,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_NOT_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(2.33);
@@ -150,7 +150,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(1.75);
@@ -164,7 +164,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(2.0);
@@ -178,7 +178,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
                 .comparisonAlgorithmType(
-                        ComparisonAlgorithms.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED)
+                        ComparisonAlgorithmType.HUNGARIAN_METHOD_DRIVEN_LONGEST_ALIGNMENT_PARTIAL_SOLUTIONS_CONSIDERED)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalRmsdThresholdPerDuplexPair(2.33);
@@ -191,7 +191,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.pdb")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).inputFormat(FormatType.PDB)
@@ -205,7 +205,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d1g1ta2_A_140_TYR.cif")
                 .secondDescriptorFilePath("d1uzka1_A_1509_TYR.cif")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).inputFormat(FormatType.CIF)
@@ -219,7 +219,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d2b97a1_A_7_LEU.pdb")
                 .secondDescriptorFilePath("d2b97a1_A_8_PHE.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalOriginElementsPairAlignmentRmsd(3.6);
@@ -232,7 +232,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d2b97a1_A_7_LEU.pdb")
                 .secondDescriptorFilePath("d2b97a1_A_8_PHE.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalOriginElementsPairAlignmentRmsd(3.6);
@@ -245,7 +245,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.PROTEIN)
                 .firstDescriptorFilePath("d1quba4_A_213_PHE.pdb")
                 .secondDescriptorFilePath("d1ppqa__A_988_TYR.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER)
@@ -259,7 +259,7 @@ public class DescriptorsComparisonTest extends CommonTest {
                 .moleculeType(MoleculeType.RNA)
                 .firstDescriptorFilePath("430d_A_7_U.pdb")
                 .secondDescriptorFilePath("430d_A_8_C.pdb")
-                .comparisonAlgorithmType(ComparisonAlgorithms.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
+                .comparisonAlgorithmType(ComparisonAlgorithmType.BACKTRACKING_DRIVEN_LONGEST_ALIGNMENT)
                 .alignmentAtomNamesFilePath(
                         "atom-names-considered-by-in-contact-residues-identification-expression.list")
                 .alignmentMode(AlignmentMode.CONSIDER).maximalOriginElementsPairAlignmentRmsd(2.5)
